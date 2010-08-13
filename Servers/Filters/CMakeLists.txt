@@ -46,6 +46,8 @@ SET(Filters_SRCS
   vtkCSVExporter.cxx
   vtkCSVWriter.cxx
   vtkDataSetToRectilinearGrid.cxx
+  vtkDebugFilter.cxx
+  vtkDebugSource.cxx
   vtkDesktopDeliveryClient.cxx
   vtkDesktopDeliveryServer.cxx
   vtkEnSight6BinaryReader2.cxx
