@@ -50,6 +50,7 @@
 #include "vtkDataObjectAlgorithm.h"
 
 class vtkStringArray;
+class vtkFileSet;
 
 //BTX
 struct vtkFileSeriesReaderInternals;
@@ -66,6 +67,11 @@ public:
   // Set/get the internal reader.
   virtual void SetReader(vtkAlgorithm*);
   vtkGetObjectMacro(Reader, vtkAlgorithm);
+
+  // Description:
+  // Set/get the file set.
+  virtual void SetFileSet(vtkFileSet*);
+  vtkGetObjectMacro(FileSet, vtkFileSet);
 
   // Description:
   // All pipeline passes are forwarded to the internal reader. The
@@ -167,7 +173,10 @@ protected:
                                int maxFilesToRead = VTK_LARGE_INTEGER);
 
   virtual void SetReaderFileName(const char* fname);
+
+  virtual void UpdateFileNames();
   vtkAlgorithm* Reader;
+  vtkFileSet* FileSet;
 
   vtkSetStringMacro(CurrentFileName);
   char* CurrentFileName;

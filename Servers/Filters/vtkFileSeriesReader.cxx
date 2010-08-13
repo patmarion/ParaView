@@ -37,6 +37,7 @@
 #include "vtkStreamingDemandDrivenPipeline.h"
 #include "vtkStringArray.h"
 #include "vtkTypeTraits.h"
+#include "vtkFileSet.h"
 
 #include "vtkSmartPointer.h"
 #define VTK_CREATE(type, name) \
@@ -52,6 +53,7 @@
 vtkStandardNewMacro(vtkFileSeriesReader);
 
 vtkCxxSetObjectMacro(vtkFileSeriesReader,Reader,vtkAlgorithm);
+vtkCxxSetObjectMacro(vtkFileSeriesReader,FileSet,vtkFileSet);
 
 //=============================================================================
 // Internal class for holding time ranges.
@@ -335,6 +337,7 @@ vtkFileSeriesReader::vtkFileSeriesReader()
   this->SetNumberOfOutputPorts(1);
 
   this->Reader = 0;
+  this->FileSet = 0;
 
   this->Internal = new vtkFileSeriesReaderInternals;
   this->Internal->FileNameIsSet = false;
@@ -375,6 +378,12 @@ unsigned long vtkFileSeriesReader::GetMTime()
     {
     readerMTime = this->Reader->GetMTime();
     mTime = ( readerMTime > mTime ? readerMTime : mTime );
+    }
+
+  if ( this->FileSet )
+    {
+    unsigned long fileSetMTime = this->FileSet->GetMTime();
+    mTime = ( fileSetMTime > mTime ? fileSetMTime : mTime );
     }
 
   return mTime;
@@ -514,6 +523,22 @@ int vtkFileSeriesReader::ProcessRequest(vtkInformation* request,
 }
 
 //----------------------------------------------------------------------------
+void vtkFileSeriesReader::UpdateFileNames()
+{
+  if (!this->FileSet)
+    {
+    return;
+    }
+
+  this->RemoveAllFileNames();
+  for (unsigned int i = 0; i < this->FileSet->GetNumberOfFileNames(); ++i)
+    {
+    //printf("Adding: %s\n", this->FileSet->GetFileName(i));
+    this->AddFileName(this->FileSet->GetFileName(i));
+    }
+}
+
+//----------------------------------------------------------------------------
 int vtkFileSeriesReader::RequestInformation(
                                  vtkInformation* request,
                                  vtkInformationVector** vtkNotUsed(inputVector),
@@ -522,6 +547,9 @@ int vtkFileSeriesReader::RequestInformation(
   vtkInformation *outInfo = outputVector->GetInformationObject(0);
 
   this->Internal->TimeRanges->Reset();
+
+
+  this->UpdateFileNames();
 
   int numFiles = (int)this->GetNumberOfFileNames();
   if (numFiles < 1)
