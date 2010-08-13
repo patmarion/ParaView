@@ -9,6 +9,7 @@ SET(ServersFilters_SRCS
   TestExtractHistogram
   TestExtractScatterPlot
   TestMPI
+  TestLiveSource
   )
 
 IF (VTK_DATA_ROOT)
