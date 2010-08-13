@@ -123,14 +123,37 @@ for view_proxy in view_proxies:
     #write_frequencies['input'].append(image_write_frequency)
 
 output_contents = """
-try: paraview.simple
-except: from paraview.simple import *
+from paraview.simple import *
+from CPUtils import *
+
+host = "localhost"
+port = 22222
+
+set_use_network(True)
+set_do_reduce_data(True)
+set_do_writing(False)
+set_use_psets(False)
+set_log_messages(False)
+set_procs_per_partition(32)
+set_final_partition_size(1)
 
 cp_writers = []
 
 def RequestDataDescription(datadescription):
     "Callback to populate the request for current timestep"
     timestep = datadescription.GetTimeStep()
+
+    #########################
+    #begin
+    set_timestep(timestep)
+    if get_use_network():
+        open_connection(host, port) # no-op if connection is already established
+        receive_messages()
+
+    elif get_do_reduce_data():
+        init_partitions()
+    #end
+    ##########################
 
 %s
 
@@ -141,6 +164,47 @@ def DoCoProcessing(datadescription):
     timestep = datadescription.GetTimeStep()
 
 %s
+
+
+    ################################
+    #begin
+    set_timestep(timestep)
+    load_proxy_states()
+
+    # Update pipelines for active sinks
+    sinks = [writer.Input for writer in cp_writers]
+
+    for sink_tag, sink in enumerate(sinks):
+        if get_sink_status(sink_tag):
+            print "  updating:", sink.GetXMLLabel()
+            sink.UpdatePipeline()
+    print "-------------------------------"
+
+    # Get data objects
+    sinkDataObjects = [sink.GetClientSideObject().GetOutputDataObject(0) for sink in sinks]
+
+    if get_use_network():
+        if get_connection_is_active():
+
+            reduced_data_objects = list()
+            for sink_tag, sink_data_object in enumerate(sinkDataObjects):
+                if get_sink_status(sink_tag):
+                    reduced_data = reduce_data(sink_data_object)
+                    reduced_data_objects.append((sink_tag, reduced_data))
+
+
+
+            send_extracts(reduced_data_objects, datadescription.GetTimeStep(),
+                                           datadescription.GetTime())
+            send_state(sinks)
+    elif get_do_reduce_data():
+        sinkDataObjects = [reduce_data(d) for d in sinkDataObjects]
+
+    if not get_do_writing():
+        cp_writers = []
+    #end
+    ################################
+
 
     for writer in cp_writers:
         if timestep %% writer.cpFrequency == 0:
