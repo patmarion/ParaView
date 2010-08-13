@@ -257,7 +257,7 @@ public:
     {
     foreach (pqSourceInfo info, this->Sources)
       {
-      if (info.OutputPort->getSource() == src)
+      if (info.OutputPort && info.OutputPort->getSource() == src)
         {
         return true;
         }
@@ -270,7 +270,7 @@ public:
     int index = 0;
     foreach (pqSourceInfo info, this->Sources)
       {
-      if (info.OutputPort->getSource() == src)
+      if (info.OutputPort && info.OutputPort->getSource() == src)
         {
         return index;
         }
@@ -285,7 +285,7 @@ public:
     for(int cc=this->Sources.size()-1; cc >=0; --cc)
       {
       pqSourceInfo& info = this->Sources[cc];
-      if (info.OutputPort->getSource() == src)
+      if (info.OutputPort && info.OutputPort->getSource() == src)
         {
         return cc;
         }
@@ -482,6 +482,10 @@ void pqDataInformationModel::dataUpdated(pqPipelineSource* changedSource)
     iter != this->Internal->Sources.end(); ++iter, row_no++)
     {
     pqOutputPort* port = iter->OutputPort;
+    if (!port)
+      {
+      continue;
+      }
     pqPipelineSource* source = port->getSource();
     
     if (source != changedSource)
@@ -521,6 +525,9 @@ void pqDataInformationModel::addSource(pqPipelineSource* source)
     }
 
   int numOutputPorts = source->getNumberOfOutputPorts();
+
+  if (!numOutputPorts) numOutputPorts = 1;
+
   this->beginInsertRows(QModelIndex(), this->Internal->Sources.size(),
     this->Internal->Sources.size()+numOutputPorts-1);
 
@@ -615,7 +622,7 @@ void pqDataInformationModel::refreshGeometrySizes()
     pqSourceInfo& sourceInfo = (*iter);
     sourceInfo.GeometryInformationValid = false;
     pqOutputPort* port = sourceInfo.OutputPort;
-    if (this->Internal->View)
+    if (this->Internal->View && port)
       {
       pqDataRepresentation* repr = port->getRepresentation(this->Internal->View);
       if (!repr || !repr->isVisible())
