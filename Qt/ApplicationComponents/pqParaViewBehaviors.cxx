@@ -50,6 +50,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqStandardViewModules.h"
 #include "pqUndoRedoBehavior.h"
 #include "pqViewFrameActionsBehavior.h"
+#include "pqApplicationComponentPanels.h"
 
 #include <QShortcut>
 #include <QMainWindow>
@@ -64,6 +65,9 @@ pqParaViewBehaviors::pqParaViewBehaviors(
 
   // * adds support for standard paraview views.
   pgm->addInterface(new pqStandardViewModules(pgm));
+
+  // add more custom proxy panels
+  pgm->addInterface(new pqApplicationComponentPanels(pgm));
 
   // Load plugins distributed with application.
   pqApplicationCore::instance()->loadDistributedPlugins();
