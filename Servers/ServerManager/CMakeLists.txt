@@ -122,6 +122,7 @@ SET(Kit_SRCS
   vtkSMOutputPort.cxx
   vtkSMNetworkImageSourceProxy.cxx
   vtkSMPQStateLoader.cxx
+  vtkSMCPStateLoader.cxx
   vtkSMPSWriterProxy.cxx
   vtkSMPluginManager.cxx
   vtkSMPluginProxy.cxx
