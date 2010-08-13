@@ -895,6 +895,12 @@ int vtkClientServerInterpreter::LoadInternal(const char* moduleName,
 }
 
 //----------------------------------------------------------------------------
+void vtkClientServerInterpreter::SetLastResult(const vtkClientServerStream& result)
+{
+  this->LastResultMessage->Copy(&result);
+}
+
+//----------------------------------------------------------------------------
 void vtkClientServerInterpreter::ClearLastResult()
 {
   this->LastResultMessage->Reset();
