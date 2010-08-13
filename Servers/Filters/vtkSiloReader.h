@@ -103,6 +103,9 @@ public:
   vtkGetStringMacro(FileName);
   const char * GetTOCString();
 
+  vtkSetMacro(Streaming, int);
+  vtkGetMacro(Streaming, int);
+
 protected:
   vtkSiloReader();
   ~vtkSiloReader();
@@ -119,12 +122,14 @@ private:
   int TableOfContentsFileIndex;
   int ProcessId;
   int NumProcesses;
+  int Streaming;
   static bool MadeGlobalSiloCalls;
   vtkSiloReaderHelper *Helper;
   SiloReaderInternals *Internals;
   vtkSiloTableOfContents *TOC;
   vtkMultiProcessController *Controller;
 
+  void SaveDataSet(vtkDataSet* dataSet);
   int FileIsInDomain(int);
   void BroadcastTableOfContents();
   void TestBroadcastTableOfContents();
@@ -147,6 +152,7 @@ private:
   vtkDataSet *GetUnstructuredMesh(DBfile *, const char *);
   vtkDataSet *CreateRectilinearMesh(DBquadmesh *);
   vtkDataSet *CreateCurvilinearMesh(DBquadmesh *);
+  vtkDataSet *CreateImageData(DBquadmesh *);
   vtkDataArray *GetMaterialArray(DBfile *, const char *, int);
   vtkDataArray *GetPointVar(DBfile *, const char *, int &);
   vtkDataArray *GetPointScalarVar(DBmeshvar *);

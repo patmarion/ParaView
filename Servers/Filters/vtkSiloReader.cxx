@@ -100,6 +100,9 @@
 #include "vtkXMLDataElement.h"
 #include "vtkXMLDataParser.h"
 
+#include "vtkImageData.h"
+#include "vtkXMLImageDataWriter.h"
+
 //----------------------------------------------------------------------------
 
 vtkStandardNewMacro(vtkSiloReader);
@@ -263,6 +266,7 @@ vtkSiloReader::vtkSiloReader()
 
   this->SetNumberOfInputPorts(0);
   this->FileName = 0;
+  this->Streaming = 1;
   this->TableOfContentsRead = false;
   this->TableOfContentsFileIndex = 0;
   this->Helper = new vtkSiloReaderHelper;
@@ -353,7 +357,9 @@ int vtkSiloReader::RequestInformation(
       }
     }
 
-  return result;
+  printf("TOC:\n%s\n", this->GetTOCString());
+
+  return 1;
 }
 
 //----------------------------------------------------------------------------
@@ -418,7 +424,8 @@ int vtkSiloReader::ReadTableOfContents()
   DBSetDataReadMask(DBMatMatnames|DBMatMatnos|DBMatMatcolors);
 
   // Call ReadDir to parse all metadata in table of contents file
-  this->ReadDir(this->TOC->OpenFile(this->TableOfContentsFileIndex), "/");
+  DBfile* tocFile = this->TOC->OpenFile(this->TableOfContentsFileIndex);
+  this->ReadDir(tocFile, "/");
 
   // Reset data read mask.
   DBSetDataReadMask(DBAll);
@@ -570,6 +577,7 @@ DBfile *vtkSiloTableOfContents::OpenFile(int index)
 
   vtkstd::string fullName = this->TOCPath + this->Filenames[index];
   const char * fname = fullName.c_str();
+  printf("Opening silo file: %s\n", fname);
   vtkDebugMacro("Opening silo file: " << fname);
   
   // Open the Silo file. Impose priority order on drivers by first
@@ -1085,7 +1093,8 @@ int vtkSiloReader::CreateDataSet(vtkMultiBlockDataSet *output)
     switch (meshType)
       {
       case DB_POINTMESH:
-        mesh = this->GetPointMesh(correctFile, correctName);
+        printf("GetPointMesh\n");
+        //mesh = this->GetPointMesh(correctFile, correctName);
       break;
       case DB_QUADMESH:
       case DB_QUAD_RECT:
@@ -1176,6 +1185,13 @@ int vtkSiloReader::CreateDataSet(vtkMultiBlockDataSet *output)
         else
           {
           mesh->GetCellData()->AddArray(varArray);
+
+          if (this->GetStreaming())
+            {
+            this->SaveDataSet(mesh);
+            mesh->GetCellData()->RemoveArray(varArray->GetName()); 
+            }
+
           }
         }
       else
@@ -1189,6 +1205,13 @@ int vtkSiloReader::CreateDataSet(vtkMultiBlockDataSet *output)
         else
           {
           mesh->GetPointData()->AddArray(varArray);
+
+          if (this->GetStreaming())
+            {
+            this->SaveDataSet(mesh);
+            mesh->GetCellData()->RemoveArray(varArray->GetName()); 
+            }
+
           }
         }
       varArray->Delete();
@@ -1234,7 +1257,11 @@ int vtkSiloReader::CreateDataSet(vtkMultiBlockDataSet *output)
       materialArray->Delete();
       }
 
-    output->SetBlock(output->GetNumberOfBlocks(), mesh);
+    if (!this->GetStreaming())
+      {
+      output->SetBlock(output->GetNumberOfBlocks(), mesh);
+      }
+
     mesh->Delete();
     }
 
@@ -1423,13 +1450,23 @@ vtkDataSet * vtkSiloReader::GetQuadMesh(DBfile *dbfile, const char *mn)
   vtkDataSet *ds = NULL;
   if (qm->coordtype == DB_COLLINEAR)
     {
-    ds = CreateRectilinearMesh(qm);
+    if (this->GetStreaming())
+      {
+      ds = this->CreateImageData(qm);
+      }
+    else
+      {
+      ds = CreateRectilinearMesh(qm);
+      }
     }
   else
     {
     // Not tested yet
     ds = CreateCurvilinearMesh(qm);
     }
+
+  if (!this->GetStreaming())
+    {
 
   GetQuadGhostZones(qm, ds);
 
@@ -1484,6 +1521,8 @@ vtkDataSet * vtkSiloReader::GetQuadMesh(DBfile *dbfile, const char *mn)
 
   ds->GetFieldData()->AddArray(arr);
   arr->Delete();
+
+  }
 
   DBFreeQuadmesh(qm);
 
@@ -1747,6 +1786,60 @@ vtkDataSet *vtkSiloReader::CreateRectilinearMesh(DBquadmesh *qm)
     coords[2]->Delete();
 
     return rgrid;
+}
+
+//----------------------------------------------------------------------------
+void vtkSiloReader::SaveDataSet(vtkDataSet* dataSet)
+{
+  if (!dataSet)
+    {
+    return;
+    }
+
+
+  vtkImageData* image = vtkImageData::SafeDownCast(dataSet);
+  if (!image)
+    {
+    vtkErrorMacro("SaveDataSet is not implemented for " << dataSet->GetClassName());
+    }
+
+  vtkXMLImageDataWriter* writer = vtkXMLImageDataWriter::New();
+  writer->SetFileName("out.vtu");
+  writer->SetInput(image);
+  writer->Update();
+  writer->Delete();
+}
+
+//----------------------------------------------------------------------------
+vtkDataSet *vtkSiloReader::CreateImageData(DBquadmesh *qm)
+{
+
+  vtkDebugMacro("CreateImageData");
+
+  int   i, j;
+  int   extent[6] = {0, 0, 0, 0, 0, 0};
+  double spacing[3] = {1, 1, 1};
+
+  for (i = 0; i < 3 && i < qm->ndims; ++i)
+    {
+    int maxDim = qm->dims[i];
+    extent[i*2] = 0;
+    extent[i*2+1] = maxDim;
+
+    printf("max dim %d: %d\n", i, maxDim);
+
+    // Determine spacing, assume uniform
+    if (maxDim > 1)
+      {
+      spacing[i] = fabs(qm->coords[i][1] - qm->coords[i][0]);
+      printf("spacing %d: %f\n", i, spacing[i]);
+      }
+    }
+
+  vtkImageData *image = vtkImageData::New();
+  image->SetExtent(extent);
+  image->SetSpacing(spacing);
+  return image;
 }
 
 //----------------------------------------------------------------------------
@@ -3222,8 +3315,8 @@ void PrintErrorMessage(char *msg)
 
 //----------------------------------------------------------------------------
 
-//#define MyDebug(X) printf X;
-#define MyDebug(X)
+#define MyDebug(X) printf X;
+//#define MyDebug(X)
 
 void vtkSiloReader::ReadDir(DBfile *dbfile, const char *dirname)
 {
@@ -3363,7 +3456,6 @@ void vtkSiloReader::ReadDir(DBfile *dbfile, const char *dirname)
     MyDebug(("  dir name: %s\n", dir_names[i]));
     }
 
-
   /////////////////////////////
   // Now read the TOC
 
@@ -3375,7 +3467,12 @@ void vtkSiloReader::ReadDir(DBfile *dbfile, const char *dirname)
     char   *realvar;
     DBfile *correctFile = dbfile;
 
+    printf("multimesh: %s\n", multimesh_names[i]);
+
     DetermineFileAndDirectory(multimesh_names[i], correctFile, 0, realvar);
+
+    printf("realvar: %s\n", realvar);
+
     DBmultimesh *mm = DBGetMultimesh(correctFile, realvar);
 
     if (mm == NULL)
@@ -3387,13 +3484,14 @@ void vtkSiloReader::ReadDir(DBfile *dbfile, const char *dirname)
 
     SiloMesh * multiMesh = this->TOC->AddMesh(multimesh_names[i]);
 
-
     for (int k = 0; k < mm->nblocks; ++k)
       {
       if ( !strcmp(mm->meshnames[k], "EMPTY") )
         {
         continue;
         }
+      printf("  mmesh block %d name: %s\n", k, mm->meshnames[k]);
+
       int meshType = this->GetMeshType(dbfile, mm->meshnames[k]);
       SiloMeshBlock * meshBlock = this->TOC->AddMeshBlock(mm->meshnames[k], multiMesh);
       meshBlock->Type = meshType;
@@ -3525,6 +3623,7 @@ void vtkSiloReader::ReadDir(DBfile *dbfile, const char *dirname)
       continue;
       }
 
+    printf("multivar: %s\n", multivar_names[i]);
     RegisterDomainDirs(mv->varnames, mv->nvars, dirname);
 
     for (int k = 0; k < mv->nvars; ++k)
@@ -3533,6 +3632,8 @@ void vtkSiloReader::ReadDir(DBfile *dbfile, const char *dirname)
         {
         continue;
         }
+
+      printf("  varname %d: %s\n", k, mv->varnames[k]);
 
       char meshForVar[256];
       char   *dirvar;
