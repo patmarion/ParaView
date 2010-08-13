@@ -85,6 +85,9 @@ public:
   bool showOnAccept() const
     { return this->ShowOnAccept; }
 
+  /// Returns a new panels factory
+  static pqObjectPanelInterface* newStandardPanelsFactory();
+
 public slots:
   void setProxy(pqProxy *proxy);
 

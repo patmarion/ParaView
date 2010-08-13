@@ -341,6 +341,12 @@ pqObjectInspectorWidget::~pqObjectInspectorWidget()
 }
 
 //-----------------------------------------------------------------------------
+pqObjectPanelInterface* pqObjectInspectorWidget::newStandardPanelsFactory()
+{
+  return new pqStandardCustomPanels(NULL);
+}
+
+//-----------------------------------------------------------------------------
 void pqObjectInspectorWidget::setAutoAccept(bool status)
 {
   pqObjectInspectorWidget::AutoAccept = status;
