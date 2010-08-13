@@ -43,6 +43,7 @@ SET(Filters_SRCS
   vtkCompleteArrays.cxx
   vtkCompositeAnimationPlayer.cxx
   vtkCompositeDataToUnstructuredGridFilter.cxx
+  vtkCoProcessorTransfer.cxx
   vtkCSVExporter.cxx
   vtkCSVWriter.cxx
   vtkDataSetToRectilinearGrid.cxx
@@ -76,6 +77,7 @@ SET(Filters_SRCS
   vtkIsoVolume.cxx
   vtkKdTreeGenerator.cxx
   vtkKdTreeManager.cxx
+  vtkLiveDataSource.cxx
   vtkMergeArrays.cxx
   vtkMergeCompositeDataSet.cxx
   vtkMinMax.cxx
