@@ -1,6 +1,17 @@
 set(python_files
+  cpdemo.py
+  cp-driver.py
+  cp-pvclient.py
   CPUtils.py
+  data-writer.py
   PartitionUtils.py
+  phasta_live.py
+  phasta_rendering.py
+  phasta_writers.py
+  test-debug-source.py
+  test-live-data.py
+  test-partition.py
+  test-state.py
 )
 
 set(out_dir "${CMAKE_BINARY_DIR}/cpscripts")
