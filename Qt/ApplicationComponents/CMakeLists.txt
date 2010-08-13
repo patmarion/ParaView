@@ -55,6 +55,7 @@ SET (MOC_HEADERS
   pqHelpReaction.h
   pqIgnoreSourceTimeReaction.h
   pqListNewProxyDefinitionsBehavior.h
+  pqLiveDataPanel.h
   pqLoadDataReaction.h
   pqLoadStateReaction.h
   pqMainControlsToolbar.h
@@ -107,6 +108,7 @@ SET (UI_FILES
   Resources/UI/pqDefaultMainWindow.ui
   Resources/UI/pqEditMenuBuilder.ui
   Resources/UI/pqFileMenuBuilder.ui
+  Resources/UI/pqLiveDataPanel.ui
   Resources/UI/pqMainControlsToolbar.ui
   Resources/UI/pqPipelineBrowserContextMenu.ui
   Resources/UI/pqSelectionToolbar.ui
@@ -182,6 +184,8 @@ SET (SOURCE_FILES
   pqIgnoreSourceTimeReaction.h
   pqListNewProxyDefinitionsBehavior.cxx
   pqListNewProxyDefinitionsBehavior.h
+  pqLiveDataPanel.cxx
+  pqLiveDataPanel.h
   pqLoadDataReaction.cxx
   pqLoadDataReaction.h
   pqLoadStateReaction.cxx

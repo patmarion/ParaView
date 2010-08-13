@@ -202,6 +202,12 @@
    <header>pqComparativeVisPanel.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>pqLiveDataPanel</class>
+   <extends>QWidget</extends>
+   <header>pqLiveDataPanel.h</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <resources>
   <include location="../../Qt/Components/Resources/pqComponents.qrc"/>
