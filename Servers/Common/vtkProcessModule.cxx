@@ -576,6 +576,12 @@ int vtkProcessModule::AcceptConnectionsOnPort(int port)
 }
 
 //-----------------------------------------------------------------------------
+int vtkProcessModule::AcceptCoProcessorConnectionOnPort(int port)
+{
+  return this->ConnectionManager->AcceptConnectionsOnPort(port, 99);
+}
+
+//-----------------------------------------------------------------------------
 void vtkProcessModule::AcceptConnectionsOnPort(int data_server_port, 
   int render_server_port, int &ds_id, int &rs_id)
 {
@@ -612,6 +618,12 @@ vtkIdType vtkProcessModule::ConnectToRemote(const char* servername, int port)
     return 0;
     }
   return this->ConnectionManager->OpenConnection(servername, port);
+}
+
+//-----------------------------------------------------------------------------
+vtkIdType vtkProcessModule::CoProcessorConnectToRemote(const char* servername, int port)
+{
+  return this->ConnectionManager->OpenCoProcessorConnection(servername, port);
 }
 
 //-----------------------------------------------------------------------------
@@ -1827,6 +1839,26 @@ vtkSocketController* vtkProcessModule::GetActiveRenderServerSocketController()
       }
     }
   return this->GetActiveSocketController();
+}
+
+//-----------------------------------------------------------------------------
+vtkMultiProcessController* vtkProcessModule::
+GetControllerForConnectionId(vtkIdType connectionId)
+{
+  vtkProcessModuleConnection* connection =
+    this->ConnectionManager->GetConnectionFromID(connectionId);
+  if (connection)
+    {
+    return connection->GetController();
+    }
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+vtkProcessModuleConnection* vtkProcessModule::
+GetConnectionFromId(vtkIdType connectionId)
+{
+  return this->ConnectionManager->GetConnectionFromID(connectionId);
 }
 
 //-----------------------------------------------------------------------------

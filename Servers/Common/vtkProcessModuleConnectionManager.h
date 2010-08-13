@@ -192,8 +192,13 @@ public:
   // Description:
   // Connects to a remote host. If connection is successful
   // it is added to the store of managed connections. Returns the
-  // ConnectionID for the connection if success, -1 otherwise.
-  vtkIdType OpenConnection(const char* hostname, int port);
+  // ConnectionID for the connection if success, NullConnectionID otherwise.
+  // If retry is false, this method will return after one failed attempt
+  // to open a connection, otherwise the connection will be attempted
+  // every second for 60 seconds.
+  vtkIdType OpenConnection(const char* hostname, int port, bool retry=true);
+
+  vtkIdType OpenCoProcessorConnection(const char* hostname, int port);
 
   // Description:
   // This overload allows for opening two separate connections to

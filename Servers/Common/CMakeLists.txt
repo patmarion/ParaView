@@ -32,6 +32,7 @@ SET(Kit_SRCS
   vtkCacheSizeKeeper.cxx
   vtkCellIntegrator.cxx
   vtkClientConnection.cxx
+  vtkCoProcessorConnection.cxx
   vtkConnectionIterator.cxx
   vtkMPISelfConnection.cxx
   vtkMultiProcessControllerHelper.cxx

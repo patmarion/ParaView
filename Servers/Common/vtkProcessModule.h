@@ -419,6 +419,9 @@ public:
   // stream.
   vtkSocketController* GetActiveRenderServerSocketController();
 
+  vtkMultiProcessController* GetControllerForConnectionId(vtkIdType connectionId);
+  vtkProcessModuleConnection* GetConnectionFromId(vtkIdType connectionId);
+
   // Description:
   // For the given connection, returns 1 if the connection is
   // a remote server connection with separate socket connections
@@ -480,6 +483,7 @@ public:
   // only 1 client, and that connection is established in Start()
   // itselt. Hence this method has not useful.
   vtkIdType ConnectToRemote(const char* serverhost, int port);
+  vtkIdType CoProcessorConnectToRemote(const char* serverhost, int port);
   vtkIdType ConnectToRemote(const char* dataserver_host, int dataserver_port,
     const char* renderserver_host, int renderserver_port);
 
@@ -488,6 +492,8 @@ public:
   // identifier for the server socket which can be used to close the socket
   // using StopAcceptingConnections(). 
   int AcceptConnectionsOnPort(int port);
+
+  int AcceptCoProcessorConnectionOnPort(int port);
 
   // Description:
   // Setups up a server socket on the given port. On success, 

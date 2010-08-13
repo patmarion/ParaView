@@ -29,6 +29,7 @@
 #include "vtkPVServerSocket.h"
 #include "vtkSelfConnection.h"
 #include "vtkServerConnection.h"
+#include "vtkCoProcessorConnection.h"
 #include "vtkServerSocket.h"
 #include "vtkSmartPointer.h"
 #include "vtkSocketCollection.h"
@@ -263,9 +264,21 @@ vtkIdType vtkProcessModuleConnectionManager::OpenSelfConnection()
   return cid;
 }
 
+
+//-----------------------------------------------------------------------------
+vtkIdType vtkProcessModuleConnectionManager::OpenCoProcessorConnection(
+  const char* hostname, int port)
+{
+  int tempMode = this->ClientMode;
+  this->ClientMode = 98;
+  vtkIdType connectionId = this->OpenConnection(hostname, port, /*retry=*/false);
+  this->ClientMode = tempMode;
+  return connectionId;
+}
+
 //-----------------------------------------------------------------------------
 vtkIdType vtkProcessModuleConnectionManager::OpenConnection(
-  const char* hostname, int port)
+  const char* hostname, int port, bool retry)
 {
   vtkIdType id = vtkProcessModuleConnectionManager::NullConnectionID;
 
@@ -284,9 +297,14 @@ vtkIdType vtkProcessModuleConnectionManager::OpenConnection(
   timer->StartTimer();
   while (1)
     {
-    if (cs->ConnectToServer(hostname, port) != -1)
+    if (cs->ConnectToServer(hostname, port, /*silenceError=*/true) != -1)
       {
+      //printf("call CreateConnection...\n");
       id = this->CreateConnection(cs, 0);
+      break;
+      }
+    if (!retry)
+      {
       break;
       }
     timer->StopTimer();
@@ -363,9 +381,12 @@ int vtkProcessModuleConnectionManager::MonitorConnections(
   vtkSocket* selectedSocket = this->SocketCollection->GetLastSelectedSocket();
   if (vtkPVServerSocket::SafeDownCast(selectedSocket))
     {
+    //printf("last selected is a server socket\n");
     vtkPVServerSocket* ss = vtkPVServerSocket::SafeDownCast(selectedSocket);
     // A new connection. 
+    //printf("call wait for connection\n");
     vtkClientSocket* cc = ss->WaitForConnection(10);
+
     if (cc)
       {
       // Determine the nature of the server socket.
@@ -405,6 +426,14 @@ int vtkProcessModuleConnectionManager::MonitorConnections(
       case RENDER_AND_DATA_SERVER:
         id = this->CreateConnection(cc, 0);
         break;
+      case 99:
+          {
+          //printf("coproc connection\n");
+          int tempMode = this->ClientMode;
+          this->ClientMode = 99;
+          id = this->CreateConnection(cc, 0);
+          this->ClientMode = tempMode;
+          }
         }
 
       if (id != vtkProcessModuleConnectionManager::NullConnectionID)
@@ -435,6 +464,7 @@ int vtkProcessModuleConnectionManager::MonitorConnections(
     ret = rc->ProcessCommunication();
     if (!ret)
       {
+      //printf("ProcessComm returned null\n");
       this->DropConnection(rc);
       return 3;
       }
@@ -685,8 +715,11 @@ vtkIdType vtkProcessModuleConnectionManager::CreateConnection(
   vtkClientSocket* cs, vtkClientSocket* renderserver_socket)
 {
   vtkIdType id = vtkProcessModuleConnectionManager::NullConnectionID;
-
+  //printf("calling NewRemoteConnection with %d\n", this->ClientMode);
   vtkRemoteConnection* rc = this->NewRemoteConnection();
+
+  //printf("created new connection: %s\n", rc ? rc->GetClassName() : "null");
+
   if (rc)
     {
     if (rc->SetSocket(cs) == 0)
@@ -785,8 +818,18 @@ unsigned int vtkProcessModuleConnectionManager::GetNumberOfConnections()
 //-----------------------------------------------------------------------------
 vtkRemoteConnection* vtkProcessModuleConnectionManager::NewRemoteConnection()
 {
+  //printf("NewRemoteConnection %d\n", this->ClientMode);
   vtkRemoteConnection* rc = 0;
-  if (this->ClientMode)
+  if (this->ClientMode == 98)
+    {
+    rc = vtkCoProcessorConnection::New();
+    static_cast<vtkCoProcessorConnection*>(rc)->SetIsClientConnection(1);
+    }
+  else if (this->ClientMode == 99)
+    {
+    rc = vtkCoProcessorConnection::New();
+    }
+  else if (this->ClientMode)
     {
     rc = vtkServerConnection::New();
     }
