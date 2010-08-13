@@ -233,6 +233,14 @@ public:
     return id.ID;
   }
 
+  // Description:
+  // Returns the self id.
+  int GetSelfIDAsInt()
+  {
+    vtkClientServerID id = this->GetSelfID();
+    return id.ID;
+  }
+
 //BTX
   // Description:
   // Returns the id of a server object.
