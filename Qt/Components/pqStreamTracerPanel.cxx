@@ -101,19 +101,25 @@ pqStreamTracerPanel::pqStreamTracerPanel(pqProxy* object_proxy, QWidget* p) :
     if(vtkSMSourceProxy* const input_proxy = vtkSMSourceProxy::SafeDownCast(
         input_property->GetProxy(0)))
       {
-      double input_bounds[6];
-      input_proxy->GetDataInformation(
-        input_property->GetOutputPortForConnection(0))->GetBounds(
-        input_bounds);
+      if (input_proxy->GetDataInformation(input_property->GetOutputPortForConnection(0)))
+        {
+        printf("got data information!\n");
 
-      proxy_center[0] = (input_bounds[0] + input_bounds[1]) / 2.0;
-      proxy_center[1] = (input_bounds[2] + input_bounds[3]) / 2.0;
-      proxy_center[2] = (input_bounds[4] + input_bounds[5]) / 2.0;
+        double input_bounds[6];
+        input_proxy->GetDataInformation(
+          input_property->GetOutputPortForConnection(0))->GetBounds(
+          input_bounds);
 
-      proxy_size[0] = fabs(input_bounds[1] - input_bounds[0]);
-      proxy_size[1] = fabs(input_bounds[3] - input_bounds[2]);
-      proxy_size[2] = fabs(input_bounds[5] - input_bounds[4]);
-      }
+        proxy_center[0] = (input_bounds[0] + input_bounds[1]) / 2.0;
+        proxy_center[1] = (input_bounds[2] + input_bounds[3]) / 2.0;
+        proxy_center[2] = (input_bounds[4] + input_bounds[5]) / 2.0;
+
+        proxy_size[0] = fabs(input_bounds[1] - input_bounds[0]);
+        proxy_size[1] = fabs(input_bounds[3] - input_bounds[2]);
+        proxy_size[2] = fabs(input_bounds[5] - input_bounds[4]);
+        }
+      else printf("NO DATA INFORMATION\n");
+      }    
     }
 
 

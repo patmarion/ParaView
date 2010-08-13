@@ -201,6 +201,7 @@ void pqLineWidget::setControlledProperty(const char* function,
 void pqLineWidget::pick(double dx, double dy, double dz)
 {
   vtkSMRepresentationProxy* widget = this->getWidgetProxy();
+  if (!widget) return;
   QList<QVariant> value;
   value << dx << dy << dz;
   if (this->Implementation->PickPoint1)
@@ -299,6 +300,11 @@ void pqLineWidget::createWidget(pqServer* server, const QString& xmlname)
       xmlname, server);
   this->setWidgetProxy(widget);
 
+  if (!widget)
+    {
+    return;
+    }
+
   widget->UpdateVTKObjects();
   widget->UpdatePropertyInformation();
 
@@ -343,6 +349,7 @@ void pqLineWidget::createWidget(pqServer* server, const QString& xmlname)
 void pqLineWidget::resetBounds(double bounds[6])
 {
   vtkSMNewWidgetRepresentationProxy* widget = this->getWidgetProxy();
+  if (!widget) return;
   if(vtkSMDoubleVectorProperty* const place_widget =
     vtkSMDoubleVectorProperty::SafeDownCast(
       widget->GetProperty("PlaceWidget")))
@@ -402,6 +409,7 @@ void pqLineWidget::onWidgetVisibilityChanged(bool visible)
 void pqLineWidget::setLineColor(const QColor& color)
 {
   vtkSMProxy* widget = this->getWidgetProxy();
+  if (!widget) return;
   vtkSMPropertyHelper(widget,
     "LineColor").Set(0, color.redF());
  vtkSMPropertyHelper(widget,

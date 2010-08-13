@@ -100,6 +100,7 @@ void pqPointSourceWidget::resetBounds(double input_bounds[6])
   this->Superclass::resetBounds(input_bounds);
 
   vtkSMNewWidgetRepresentationProxy* widget = this->getWidgetProxy();
+  if (!widget) return;
   double min_diameter = input_bounds[1]-input_bounds[0];
   min_diameter = qMin(min_diameter, input_bounds[3]-input_bounds[2]);
   min_diameter = qMin(min_diameter, input_bounds[5]-input_bounds[4]);
@@ -116,19 +117,22 @@ void pqPointSourceWidget::resetBounds(double input_bounds[6])
 void pqPointSourceWidget::setControlledProperty(const char* function,
   vtkSMProperty* _property)
 {
-  if (strcmp(function, "NumberOfPoints") == 0)
+  if (this->getWidgetProxy())
     {
-    this->Implementation->Links.addPropertyLink(
-      this->Implementation->Controls.NumberOfPoints, "value", 
-      SIGNAL(valueChanged(int)),
-      this->getWidgetProxy(), this->getWidgetProxy()->GetProperty("NumberOfPoints"));
-    }
-  else if (strcmp(function, "Radius") == 0)
-    {
-    this->Implementation->Links.addPropertyLink(
-      this->Implementation->Controls.Radius, "text", 
-      SIGNAL(textChanged(QString)),
-      this->getWidgetProxy(), this->getWidgetProxy()->GetProperty("Radius"));
+    if (strcmp(function, "NumberOfPoints") == 0)
+      {
+      this->Implementation->Links.addPropertyLink(
+        this->Implementation->Controls.NumberOfPoints, "value", 
+        SIGNAL(valueChanged(int)),
+        this->getWidgetProxy(), this->getWidgetProxy()->GetProperty("NumberOfPoints"));
+      }
+    else if (strcmp(function, "Radius") == 0)
+      {
+      this->Implementation->Links.addPropertyLink(
+        this->Implementation->Controls.Radius, "text", 
+        SIGNAL(textChanged(QString)),
+        this->getWidgetProxy(), this->getWidgetProxy()->GetProperty("Radius"));
+      }
     }
   this->Superclass::setControlledProperty(function, _property);
 }

@@ -108,13 +108,16 @@ void pqLineSourceWidget::setControlledProperties(vtkSMProperty* point1,
 void pqLineSourceWidget::setControlledProperty(const char* function,
   vtkSMProperty* _property)
 {
-  if (strcmp(function, "Resolution") == 0)
+  if (this->getWidgetProxy())
     {
-    this->Implementation->Links.addPropertyLink(
-      this->Implementation->UI.resolution, "value", 
-      SIGNAL(valueChanged(int)),
-      this->getWidgetProxy(), 
-      this->getWidgetProxy()->GetProperty("Resolution"));
+    if (strcmp(function, "Resolution") == 0)
+      {
+      this->Implementation->Links.addPropertyLink(
+        this->Implementation->UI.resolution, "value", 
+        SIGNAL(valueChanged(int)),
+        this->getWidgetProxy(), 
+        this->getWidgetProxy()->GetProperty("Resolution"));
+      }
     }
   this->Superclass::setControlledProperty(function, _property);
 }
