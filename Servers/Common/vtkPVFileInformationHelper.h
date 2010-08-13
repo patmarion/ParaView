@@ -80,6 +80,13 @@ public:
   vtkSetMacro(FastFileTypeDetection, int);
 
   // Description:
+  // When on, files will be organized by group.
+  // See vtkPVFileInformation::OrganizeCollection().
+  // On by default.
+  vtkGetMacro(OrganizeGroups, int);
+  vtkSetMacro(OrganizeGroups, int);
+
+  // Description:
   // Returns the platform specific path separator.
   vtkGetStringMacro(PathSeparator);
 protected:
@@ -91,6 +98,7 @@ protected:
   int DirectoryListing;
   int SpecialDirectories;
   int FastFileTypeDetection;
+  int OrganizeGroups;
 
   char* PathSeparator;
   vtkSetStringMacro(PathSeparator);

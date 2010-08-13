@@ -125,6 +125,7 @@ protected:
   void GetSpecialDirectories();
   void SetHiddenFlag( );
   int FastFileTypeDetection;
+  int OrganizeGroups;
 private:
   vtkPVFileInformation(const vtkPVFileInformation&); // Not implemented.
   void operator=(const vtkPVFileInformation&); // Not implemented.

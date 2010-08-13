@@ -375,6 +375,7 @@ vtkPVFileInformation::vtkPVFileInformation()
   this->FullPath = 0;
   this->FastFileTypeDetection = 0;
   this->Hidden = false;
+  this->OrganizeGroups = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -414,6 +415,7 @@ void vtkPVFileInformation::CopyFromObject(vtkObject* object)
     }
 
   this->FastFileTypeDetection = helper->GetFastFileTypeDetection();
+  this->OrganizeGroups = helper->GetOrganizeGroups();
 
   vtkstd::string working_directory =
     vtksys::SystemTools::GetCurrentWorkingDirectory().c_str();
@@ -1013,6 +1015,11 @@ struct vtkPVFileInformation::vtkInfo
 //-----------------------------------------------------------------------------
 void vtkPVFileInformation::OrganizeCollection(vtkPVFileInformationSet& info_set)
 {
+  if (!this->OrganizeGroups)
+    {
+    return;
+    }
+
   typedef vtkstd::map<vtkstd::string, vtkInfo> MapOfStringToInfo;
   MapOfStringToInfo fileGroups;
 

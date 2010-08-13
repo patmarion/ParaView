@@ -27,6 +27,7 @@ vtkPVFileInformationHelper::vtkPVFileInformationHelper()
   this->SetPath(".");
   this->PathSeparator = 0;
   this->FastFileTypeDetection = 1;
+  this->OrganizeGroups = 1;
 #if defined(_WIN32) && !defined(__CYGWIN__)
   this->SetPathSeparator("\\");
 #else
