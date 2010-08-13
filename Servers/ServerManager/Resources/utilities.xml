@@ -1842,6 +1842,42 @@
         <SimpleStringInformationHelper />
       </StringVectorProperty>
     </ServerFileListingProxy>
+
+    <Proxy name="FileSet"
+      class="vtkFileSet">
+
+      <Property
+        name="Poll"
+        command="PollForNewFiles" />
+
+      <IntVectorProperty
+        name="NumberOfFileNames"
+        command="GetNumberOfFileNames"
+        number_of_elements="1"
+        information_only="1"
+        default_values="0">
+        <SimpleIntInformationHelper />
+      </IntVectorProperty>
+
+      <StringVectorProperty
+        name="BaseDirectory"
+        label="Base Directory"
+        command="SetBaseDirectory"
+        default_values=""
+        number_of_elements="1">
+      <Documentation>
+      The base directory
+      </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+        name="FileList"
+        command="GetFileNames"
+        information_only="1">
+        <StringArrayHelper/>
+      </StringVectorProperty>
+    </Proxy>
+
   </ProxyGroup>
 
   <ProxyGroup name="locators">
