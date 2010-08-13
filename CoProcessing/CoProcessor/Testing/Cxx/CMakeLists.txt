@@ -6,6 +6,12 @@ IF (COPROCESSOR_USE_MPI)
   INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
 ENDIF (COPROCESSOR_USE_MPI)
 
+ADD_EXECUTABLE(simpleDriver simpleDriver.cxx)
+TARGET_LINK_LIBRARIES(simpleDriver vtkCoProcessor)
+
+ADD_EXECUTABLE(simpleReaderDriver simpleReaderDriver.cxx)
+TARGET_LINK_LIBRARIES(simpleReaderDriver vtkCoProcessor)
+
 ADD_EXECUTABLE(CoProcessingPythonScriptExample PythonScriptCoProcessingExample.cxx vtkPVCustomTestDriver.cxx)
 TARGET_LINK_LIBRARIES(CoProcessingPythonScriptExample vtkCoProcessor vtkCPTestDriver)
 
