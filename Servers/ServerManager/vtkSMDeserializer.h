@@ -50,6 +50,8 @@ protected:
   // Locate the XML for the proxy with the given id.
   virtual vtkPVXMLElement* LocateProxyElement(int id);
 
+  virtual bool SkipProxy(const char* xml_group, const char* xml_name) { return false; }
+
   // Description:
   // TEMPORARY. Used to load the state on the proxy. This is only for the sake
   // of the lookmark state loader until we get the chance to clean it up.

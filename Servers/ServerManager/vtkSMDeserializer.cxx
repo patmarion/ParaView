@@ -49,6 +49,11 @@ vtkSMProxy* vtkSMDeserializer::NewProxy(int id, vtkSMProxyLocator* locator)
     return 0;
     }
 
+  if (this->SkipProxy(group, type))
+    {
+    return 0;
+    }
+
   vtkSMProxy* proxy;
   proxy = this->CreateProxy(group, type, locator->GetConnectionID());
   if (!proxy)
