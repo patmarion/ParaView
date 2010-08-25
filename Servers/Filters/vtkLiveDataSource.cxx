@@ -28,6 +28,7 @@
 #include "vtkCommand.h"
 #include "vtkCoProcessorConnection.h"
 #include "vtkSocketCommunicator.h"
+#include "vtkMultiProcessController.h"
 #include "vtkServerSocket.h"
 #include "vtkClientSocket.h"
 #include "vtkMultiProcessStream.h"
@@ -188,6 +189,8 @@ void vtkLiveDataSource::SetupCoProcessorConnections()
 
   this->Internal->ServerSocket = vtkSmartPointer<vtkServerSocket>::New();
   this->Internal->ServerSocket->CreateServer(port);
+
+  pm->GetController()->Barrier();
 
   if (pid == 0)
     {
