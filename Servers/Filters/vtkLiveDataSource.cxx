@@ -211,7 +211,7 @@ void vtkLiveDataSource::SetupCoProcessorConnections()
         }
       else
         {
-        stream << "";
+        stream << "localhost";
         }
       }
 
