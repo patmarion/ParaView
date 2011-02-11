@@ -39,8 +39,41 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vtkPVPlugin.h"
 
 
+#include "vtkQtDebugLeaksView.h"
+#ifdef PARAVIEW_ENABLE_PYTHON
+#include "pqPythonManager.h"
+#include "pqPVApplicationCore.h"
+#include "pqPythonDialog.h"
+#include "pqPythonShell.h"
+#endif
 
 
+class pvtkQtDebugLeaksView : public vtkQtDebugLeaksView
+{
+public:
+  typedef vtkQtDebugLeaksView Superclass;
+  pvtkQtDebugLeaksView(QWidget* parent=0) : Superclass(parent) { }
+
+  #ifdef PARAVIEW_ENABLE_PYTHON
+  #define pyshell() pqPVApplicationCore::instance()->pythonManager()->pythonShellDialog()->shell()
+
+  // Paraview constructs multiple python contexts.
+  // These methods make sure the correct python context is accessed.
+  virtual void addObjectToPython(vtkObjectBase* object)
+    {
+    pyshell()->makeCurrent();
+    this->Superclass::addObjectToPython(object);
+    pyshell()->releaseControl();
+    }
+
+  virtual void addObjectsToPython(const QList<vtkObjectBase*>& objects)
+    {
+    pyshell()->makeCurrent();
+    this->Superclass::addObjectsToPython(objects);
+    pyshell()->releaseControl();
+    }
+  #endif
+};
 
 class ParaViewMainWindow::pqInternals : public Ui::pqClientMainWindow
 {
@@ -49,6 +82,10 @@ class ParaViewMainWindow::pqInternals : public Ui::pqClientMainWindow
 //-----------------------------------------------------------------------------
 ParaViewMainWindow::ParaViewMainWindow()
 {
+  pvtkQtDebugLeaksView* leaksView = new pvtkQtDebugLeaksView();
+  leaksView->show();
+
+
   this->Internals = new pqInternals();
   this->Internals->setupUi(this);
 
