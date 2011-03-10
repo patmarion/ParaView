@@ -1930,10 +1930,11 @@ const char* vtkSMRenderViewProxy::GetSuggestedViewType(vtkIdType connectionID)
         // tiled-display
         renderViewName = "IceTMultiDisplayRenderView";
         }
-      else if (server_info->GetNumberOfMachines())
-        {
-        renderViewName = "CaveRenderView";
-        }
+      // Don't go into cave mode just because machine names are specified
+      //else if (server_info->GetNumberOfMachines())
+      //  {
+      //  renderViewName = "CaveRenderView";
+      //  }
       else
         {
         // regular client-server
