@@ -457,12 +457,14 @@ int vtkProcessModule::StartServer(unsigned long msec)
       {
       // Connection dropped.
       cout << "Client connection closed." << endl;
+      /*
       if (!support_multiple_connections)
         {
         // since supporting only one connection, server can do nothing but exit.
         ret = 0;
         break;
         }
+      */
       }
     }
 
