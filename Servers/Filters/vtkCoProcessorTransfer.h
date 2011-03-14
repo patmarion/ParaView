@@ -38,6 +38,8 @@ public:
   virtual void SendExtracts(vtkDataObjectCollection* extracts, vtkIntArray* extractTags,
                             vtkIdType timestep, double time);
 
+  virtual void SendExtractsCommand();
+
   virtual void SendState(vtkPVXMLElement* elem);
 
   virtual void Disconnect();

@@ -247,6 +247,9 @@ def send_extracts(extracts, timestep, time):
 
     if not get_connection_is_active():
         raise Exception("Cannot send extract because there is no connection.")
+
+    get_transfer().SendExtractsCommand()
+
     if pid in get_final_partition_group():
 
         extract_collection = vtk.vtkDataObjectCollection()

@@ -290,10 +290,33 @@ vtkPVXMLElement* vtkCoProcessorTransfer::ReceiveState()
 }
 
 //----------------------------------------------------------------------------
+void vtkCoProcessorTransfer::SendExtractsCommand()
+{
+  myprint("send_extracts_command");
+  vtkProcessModule* pm = vtkProcessModule::GetProcessModule();
+  int pid = pm->GetPartitionId();
+  if (pid == 0)
+    {
+    if (!this->Internal->ConnectionId)
+      {
+      vtkErrorMacro("Null connection id");
+      return;
+      }
+
+    // Trigger a call to RecieveExtract on the server
+    vtkClientServerStream str;
+    str << vtkClientServerStream::Invoke << "rcv" << vtkClientServerStream::End;
+    pm->SendStream(this->Internal->ConnectionId, vtkProcessModule::DATA_SERVER_ROOT, str);
+    }
+}
+
+//----------------------------------------------------------------------------
 void vtkCoProcessorTransfer::SendExtracts(vtkDataObjectCollection* extracts,
                                           vtkIntArray* extractTags,
                                           vtkIdType timestep, double time)
 {
+  myprint("send_extracts");
+
   if (!this->Internal->SocketCommunicator)
     {
     vtkErrorMacro("Socket communicator is null");
@@ -313,24 +336,6 @@ void vtkCoProcessorTransfer::SendExtracts(vtkDataObjectCollection* extracts,
     return;
     }
 
-  myprint("send_extracts");
-
-  vtkProcessModule* pm = vtkProcessModule::GetProcessModule();
-  int pid = pm->GetPartitionId();
-  if (pid == 0)
-    {
-    if (!this->Internal->ConnectionId)
-      {
-      vtkErrorMacro("Null connection id");
-      return;
-      }
-
-    // Trigger a call to RecieveExtract on the server
-    vtkClientServerStream str;
-    str << vtkClientServerStream::Invoke << "rcv" << vtkClientServerStream::End;
-    pm->SendStream(this->Internal->ConnectionId, vtkProcessModule::DATA_SERVER_ROOT, str);
-    }
-
   this->Internal->SocketCommunicator->Send(&timestep, 1, 1, 9998);
   this->Internal->SocketCommunicator->Send(&time, 1, 1, 9998);
   this->Internal->SocketCommunicator->Send(&numberOfExtracts, 1, 1, 9998);
@@ -343,13 +348,11 @@ void vtkCoProcessorTransfer::SendExtracts(vtkDataObjectCollection* extracts,
     this->Internal->SocketCommunicator->Send(dataObject, 1, 9999);
     }
 
-
   if (!this->Internal->SocketCommunicator->GetSocket()->GetConnected())
     {
     myprint("send_extract, connection is dead");
     this->Internal->SocketCommunicator = 0;
     }
-
 }
 
 //-----------------------------------------------------------------------------
