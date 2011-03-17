@@ -36,6 +36,7 @@
 #include "vtkProcessModuleConnectionManager.h"
 #include "vtkStringArray.h"
 #include "vtkPVXMLElement.h"
+#include "vtkPVOptions.h"
 
 #include <vtkstd/vector>
 #include <vtkstd/map>
@@ -115,6 +116,7 @@ public:
   bool SendSinkStatusToCP;
   int NumberOfTimeSteps;
   vtkSmartPointer<vtkConnectionObserver> Observer;
+  vtkSmartPointer<vtkClientSocket>       NotifySocket;
 
   std::vector<vtkSmartPointer<vtkSocketCommunicator> > SocketCommunicators;
 
@@ -271,6 +273,24 @@ void vtkLiveDataSource::ListenForCoProcessorConnection()
     {
     myprint("listen_for_cpconnection port: " << this->Port);
     pm->AcceptCoProcessorConnectionOnPort(this->Port);
+
+
+    vtkPVOptions* options = pm->GetOptions();
+    const char* hostName = options->GetClientHostName();
+    const int port = 12345;
+    if (hostName && hostName[0])
+      {
+      printf("connecting to client host %s %d\n", hostName, port);
+
+      this->Internal->NotifySocket = vtkSmartPointer<vtkClientSocket>::New();
+      int result = this->Internal->NotifySocket->ConnectToServer(hostName, 12345);
+      if (result != 0)
+        {
+        vtkErrorMacro("Failed to connect notify socket with client "
+                      << hostName << ":" << port);
+        this->Internal->NotifySocket = NULL;
+        }
+      }
     }
 }
 
@@ -409,6 +429,11 @@ void vtkLiveDataSource::ReceiveExtract()
     }
 
   this->Internal->NewDataAvailable = true;
+
+  if (this->Internal->NotifySocket)
+    {
+    this->Internal->NotifySocket->Send("N", 1);
+    }
 }
 
 //----------------------------------------------------------------------------

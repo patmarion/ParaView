@@ -73,6 +73,10 @@ protected slots:
 
   void onItemChanged(QTreeWidgetItem* item);
 
+  void onNewConnection();
+  void onSocketNotify();
+  void onNewTimeStep();
+
 protected:
 
   void setSinkStatusFromWidget();

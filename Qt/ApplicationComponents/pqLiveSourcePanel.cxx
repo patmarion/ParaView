@@ -65,6 +65,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqCollapsedGroup.h"
 #include "pqProxy.h"
 #include "pqTreeWidget.h"
+#include "pqPVApplicationCore.h"
+#include "pqPythonManager.h"
+#include "pqPythonDialog.h"
+
 
 
 #include <QVBoxLayout>
@@ -77,6 +81,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QHeaderView>
 #include <QDebug>
 #include <vtksys/ios/sstream>
+#include <QTcpServer>
+#include <QTcpSocket>
+
+
 
 //-----------------------------------------------------------------------------
 class pqLiveSourcePanel::pqInternal
@@ -88,6 +96,8 @@ public:
   this->PropertyPanel = 0;
   this->ProxyPanelAcceptButton = 0;
   this->ProxyPanelResetButton = 0;
+  this->TcpServer = 0;
+  this->TcpSocket = 0;
   }
 
   vtkSMSourceProxy* LiveSourceProxy;
@@ -100,6 +110,9 @@ public:
   QLabel*       LastTimeLabel;
   QCheckBox*    SnapToLatestCheckBox;
   QTreeWidget*  TreeWidget;
+
+  QTcpServer* TcpServer;
+  QTcpSocket* TcpSocket;
 
   pqObjectPanel* PropertyPanel;
   QPushButton*   ProxyPanelAcceptButton;
@@ -129,8 +142,6 @@ pqLiveSourcePanel::pqLiveSourcePanel(pqProxy* object_proxy, QWidget* p) :
   // from row, from col, row span, col span
   //panel_layout->addWidget(group, panel_layout->rowCount(), 0, 1, panel_layout->columnCount());
 
-
-
   this->Internal->LiveSource = vtkSMSourceProxy::SafeDownCast(this->proxy());
 
   this->Internal->TreeWidget = new pqTreeWidget();
@@ -138,6 +149,7 @@ pqLiveSourcePanel::pqLiveSourcePanel(pqProxy* object_proxy, QWidget* p) :
 
 
   this->Internal->SnapToLatestCheckBox = new QCheckBox("Snap to last timestep");
+  this->Internal->SnapToLatestCheckBox->setCheckState(Qt::Unchecked);
 
   QHBoxLayout* buttonLayout = new QHBoxLayout;
   this->Internal->PollButton = new QPushButton("Poll");
@@ -185,6 +197,11 @@ pqLiveSourcePanel::pqLiveSourcePanel(pqProxy* object_proxy, QWidget* p) :
 
   this->updateLastTimeLabel();
 
+  // Create a tcp server socket
+  this->Internal->TcpServer = new QTcpServer(this);
+  this->connect(this->Internal->TcpServer, SIGNAL(newConnection()),
+                    SLOT(onNewConnection()));
+  this->Internal->TcpServer->listen(QHostAddress::Any, 12345);
 }
 
 //-----------------------------------------------------------------------------
@@ -223,6 +240,23 @@ void pqLiveSourcePanel::reset()
 }
 
 
+//-----------------------------------------------------------------------------
+void pqLiveSourcePanel::onNewConnection()
+{
+  this->Internal->TcpSocket = this->Internal->TcpServer->nextPendingConnection();
+  if (this->Internal->TcpSocket)
+    {
+    this->connect(this->Internal->TcpSocket, SIGNAL(readyRead()), SLOT(onSocketNotify()));
+    this->Internal->TcpServer->close();
+    }
+}
+
+//-----------------------------------------------------------------------------
+void pqLiveSourcePanel::onSocketNotify()
+{
+  this->Internal->TcpSocket->readAll();
+  this->onPollServer();
+}
 
 //-----------------------------------------------------------------------------
 bool pqLiveSourcePanel::snapToLatestTimeStep()
@@ -486,12 +520,21 @@ void pqLiveSourcePanel::onTimeOut()
 }
 
 //-----------------------------------------------------------------------------
+void pqLiveSourcePanel::onNewTimeStep()
+{
+  QString script = "try: onLiveDataTimeStep()\n"
+                   "except NameError: pass\n";
+  pqPVApplicationCore::instance()->pythonManager()->pythonShellDialog()->runString(script);
+}
+
+//-----------------------------------------------------------------------------
 void pqLiveSourcePanel::onPollServer()
 {
 
   vtkSMSourceProxy* self = this->Internal->LiveSource;
   self->InvokeCommand("Poll");
 
+  /*
   int result;
   int newDataIsAvailable;
 
@@ -500,10 +543,16 @@ void pqLiveSourcePanel::onPollServer()
     self->GetConnectionID(), self->GetServers());
   result = lastResult.GetArgument(0, 0, &newDataIsAvailable);
 
+  printf("result: %d\n", result);
+  printf("newDataIsAvailable: %d\n", newDataIsAvailable);
+
   if (!result || !newDataIsAvailable)
     {
     return;
     }
+  */
+
+  QTimer::singleShot(0, this, SLOT(onNewTimeStep()));
 
   this->Internal->LiveSource->UpdatePipelineInformation();
 
@@ -514,14 +563,16 @@ void pqLiveSourcePanel::onPollServer()
     lastTime = vtkSMPropertyHelper(self, "TimestepValues").GetAsDouble(nElements-1);
     }
 
-  if (lastTime != this->Internal->LastTime && this->snapToLatestTimeStep())
+  bool latestTimestepChanged = (lastTime != this->Internal->LastTime);
+  this->Internal->LastTime = lastTime;
+  this->updateLastTimeLabel();
+
+
+  if (latestTimestepChanged && this->snapToLatestTimeStep())
     {
     pqPVApplicationCore::instance()->animationManager()->
       getActiveScene()->getProxy()->InvokeCommand("GoToLast");
     }
-
-  this->Internal->LastTime = lastTime;
-  this->updateLastTimeLabel();
 
 
   vtkSMStringVectorProperty* stateProp = vtkSMStringVectorProperty::SafeDownCast(
