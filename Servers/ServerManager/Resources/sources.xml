@@ -1929,6 +1929,16 @@ OS is the output scalar; M represents the maximum value; G represents the Gaussi
       </IntVectorProperty>
 
       <IntVectorProperty
+        name="SocketsPerProcess"
+        command="SetSocketsPerProcess"
+        number_of_elements="1"
+        default_values="1">
+        <Documentation>
+        The number of sockets each pvserver process will open for receiving data.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
           name="SinkStatus"
           command="SetSinkStatus"
           repeat_command="1"

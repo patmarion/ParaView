@@ -64,6 +64,9 @@ public:
   vtkGetMacro(CacheSize, int);
   void SetCacheSize(int cacheSize);
 
+  vtkGetMacro(SocketsPerProcess, int);
+  vtkSetMacro(SocketsPerProcess, int);
+
   void ChopVectors(int newSize);
 
   virtual void ListenForCoProcessorConnection();
@@ -104,6 +107,7 @@ protected:
   char*       CPStateSend;
   int         Port;
   int         CacheSize;
+  int         SocketsPerProcess;
 
 private:
   vtkLiveDataSource(const vtkLiveDataSource&); // Not implemented.

@@ -115,15 +115,16 @@ public:
   bool SendSinkStatusToCP;
   int NumberOfTimeSteps;
   vtkSmartPointer<vtkConnectionObserver> Observer;
-  vtkSmartPointer<vtkSocketCommunicator> SocketCommunicator;
-  vtkSmartPointer<vtkServerSocket>       ServerSocket;
 
-  typedef vtkstd::vector<vtkSmartPointer<vtkDataObject> > DataObjectVectorType;
-  typedef vtkstd::map<int, DataObjectVectorType> DataObjectCacheType;
+  std::vector<vtkSmartPointer<vtkSocketCommunicator> > SocketCommunicators;
+
+  typedef std::vector<vtkSmartPointer<vtkDataObject> > DataPiecesType;
+  typedef std::vector<DataPiecesType> DataPiecesVectorType;
+  typedef std::map<int, DataPiecesVectorType> DataObjectCacheType;
   DataObjectCacheType DataObjectCache;
 
-  vtkstd::vector<double> TimeSteps;
-  vtkstd::map<int, int>  SinkStatus;
+  std::vector<double> TimeSteps;
+  std::map<int, int>  SinkStatus;
 };
 
 //-----------------------------------------------------------------------------
@@ -137,6 +138,7 @@ vtkLiveDataSource::vtkLiveDataSource()
   this->CoProcessorConnectionId = 0;
   this->Port = 22222;
   this->CacheSize = 0;
+  this->SocketsPerProcess = 0;
   this->Internal = new vtkInternal;
   this->Internal->Observer->Source = this;
   vtkProcessModule::GetProcessModule()->AddObserver(
@@ -171,7 +173,7 @@ void vtkLiveDataSource::SendCoProcessorConnectionInfo()
 
   vtkMultiProcessStream stream;
   vtkProcessModule* pm = vtkProcessModule::GetProcessModule();
-  stream << pm->GetNumberOfLocalPartitions();
+  stream << pm->GetNumberOfLocalPartitions() * this->SocketsPerProcess;
   vtkCoProcessorConnection::SendStream(this->CoProcessorConnectionId, &stream);
 }
 
@@ -179,16 +181,22 @@ void vtkLiveDataSource::SendCoProcessorConnectionInfo()
 //----------------------------------------------------------------------------
 void vtkLiveDataSource::SetupCoProcessorConnections()
 {
+  const int dataPortBase = this->Port + 1;
 
-  int port = this->Port;
   vtkProcessModule* pm = vtkProcessModule::GetProcessModule();
   int pid = pm->GetPartitionId();
-  port = port + pid + 1;
 
-  myprint("listen on port: " << port);
+  std::vector<int> ports;
+  std::vector<vtkSmartPointer<vtkServerSocket> > serverSockets;
+  for (int i = 0; i < this->SocketsPerProcess; ++i)
+    {
+    ports.push_back(dataPortBase + pid*this->SocketsPerProcess + i);
+    serverSockets.push_back(vtkSmartPointer<vtkServerSocket>::New());
 
-  this->Internal->ServerSocket = vtkSmartPointer<vtkServerSocket>::New();
-  this->Internal->ServerSocket->CreateServer(port);
+    myprint("listening on port: " << ports.back());
+
+    serverSockets.back()->CreateServer(ports.back());
+    }
 
   pm->GetController()->Barrier();
 
@@ -197,44 +205,53 @@ void vtkLiveDataSource::SetupCoProcessorConnections()
     // Todo- gather host:port info for satelites and send
     // For now just send hosts
 
-    int numberOfMachines = pm->GetNumberOfMachines();
-    int numberOfPartitions = pm->GetNumberOfLocalPartitions();
+    int numberOfMachineNames = pm->GetNumberOfMachines();
+    int numberOfProcesses = pm->GetNumberOfLocalPartitions();
 
     vtkMultiProcessStream stream;
-    stream << numberOfPartitions;
+    stream << numberOfProcesses * this->SocketsPerProcess;
 
-    for (int i = 0; i < numberOfPartitions; ++i)
+
+    for (int i = 0; i < numberOfProcesses; ++i)
       {
-      if (i < numberOfMachines)
+      for (int k = 0; k < this->SocketsPerProcess; ++k)
         {
-        stream << pm->GetMachineName(i);
-        }
-      else
-        {
-        stream << "localhost";
+        if (i < numberOfMachineNames)
+          {
+          stream << pm->GetMachineName(i);
+          }
+        else
+          {
+          stream << "localhost";
+          }
         }
       }
+
 
     vtkCoProcessorConnection::SendStream(this->CoProcessorConnectionId, &stream);
     }
 
-  vtkClientSocket* socket = this->Internal->ServerSocket->WaitForConnection();
-  this->Internal->ServerSocket = 0;
-
-  if (!socket)
+  // Wait for connections
+  this->Internal->SocketCommunicators.clear();
+  for (size_t i = 0; i < serverSockets.size(); ++i)
     {
-    vtkErrorMacro("Failed to get connection!");
-    return;
+    vtkClientSocket* socket = serverSockets[i]->WaitForConnection();
+    serverSockets[i] = 0;
+    if (!socket)
+      {
+      vtkErrorMacro("Data connection failed for server socket on port " << ports[i]);
+      continue;
+      }
+
+    this->Internal->SocketCommunicators.push_back(vtkSmartPointer<vtkSocketCommunicator>::New());
+    this->Internal->SocketCommunicators.back()->SetSocket(socket);
+    this->Internal->SocketCommunicators.back()->ServerSideHandshake();
+    socket->Delete();
+
+    //int remotePid;
+    //comm->Receive(&remotePid, 1, 1, 9999);
+    //myprint("connected to remote pid: " << remotePid);
     }
-
-  this->Internal->SocketCommunicator = vtkSmartPointer<vtkSocketCommunicator>::New();
-  this->Internal->SocketCommunicator->SetSocket(socket);
-  this->Internal->SocketCommunicator->ServerSideHandshake();
-  socket->Delete();
-
-  //int remotePid;
-  //comm->Receive(&remotePid, 1, 1, 9999);
-  //myprint("connected to remote pid: " << remotePid);
 }
 
 
@@ -282,18 +299,18 @@ void vtkLiveDataSource::ChopVectors(int newSize)
   vtkInternal::DataObjectCacheType::iterator itr;
   for (itr = this->Internal->DataObjectCache.begin(); itr != this->Internal->DataObjectCache.end(); ++itr)
     {
-    vtkInternal::DataObjectVectorType & dataObjectVector = itr->second;
+    vtkInternal::DataPiecesVectorType & dataPiecesVector = itr->second;
 
     // Might need to grow the vector first
-    while (dataObjectVector.size() < newSize)
+    while (dataPiecesVector.size() < newSize)
       {
-      dataObjectVector.push_back(NULL);
+      dataPiecesVector.push_back(vtkInternal::DataPiecesType());
       }
 
-    vtkstd::rotate(dataObjectVector.begin(),
-                   dataObjectVector.end() - newSize,
-                   dataObjectVector.end());
-    dataObjectVector.resize(newSize);
+    vtkstd::rotate(dataPiecesVector.begin(),
+                   dataPiecesVector.end() - newSize,
+                   dataPiecesVector.end());
+    dataPiecesVector.resize(newSize);
     }
 }
 
@@ -326,63 +343,72 @@ void vtkLiveDataSource::ReceiveExtract()
 {
   myprint("receive_extract");
 
-  if (!this->Internal->SocketCommunicator)
-    {
-    vtkErrorMacro("Socket communicator is null");
-    return;
-    }
-
-
-  int sinkTag;
-  int numberOfExtracts;
-  vtkIdType timestep;
-  double time;
-
-  this->Internal->SocketCommunicator->Receive(&timestep, 1, 1, 9998);
-  this->Internal->SocketCommunicator->Receive(&time, 1, 1, 9998);
-  this->Internal->SocketCommunicator->Receive(&numberOfExtracts, 1, 1, 9998);
-
-  myprint("receiving " << numberOfExtracts << " extracts at time " << time);
-
-  // Add new time
-
-  // chop vectors if we are at the cache limit
+  // chop storage vectors if we are at the cache limit
   if (this->CacheSize && this->Internal->TimeSteps.size() >= this->CacheSize)
     {
     this->ChopVectors(this->CacheSize - 1);
     }
 
-  this->Internal->TimeSteps.push_back(time);
-
-  size_t insertIndex = this->Internal->TimeSteps.size() - 1;
-
-  // Receive extracts
-  for (int i = 0; i < numberOfExtracts; ++i)
+  // Receive extract data on each socket communicator
+  const size_t numberOfSocketCommunicators = this->Internal->SocketCommunicators.size();
+  for (size_t commIndex = 0; commIndex < numberOfSocketCommunicators; ++commIndex)
     {
-    this->Internal->SocketCommunicator->Receive(&sinkTag, 1, 1, 9998);
-    vtkDataObject* dataObject = this->Internal->SocketCommunicator->ReceiveDataObject(1, 9999);
-    if (!dataObject)
+
+    vtkSocketCommunicator* communicator = this->Internal->SocketCommunicators[commIndex];
+    if (!communicator)
       {
-      vtkErrorMacro("Error receiving data object from controller.");
+      vtkErrorMacro("Socket communicator " << commIndex << " is null");
       continue;
       }
 
-    vtkInternal::DataObjectVectorType & dataObjectVector =
-      this->Internal->DataObjectCache[sinkTag];
 
-    while (dataObjectVector.size() < insertIndex + 1)
+    int sinkTag;
+    int numberOfExtracts;
+    vtkIdType timestep;
+    double time;
+
+    communicator->Receive(&timestep, 1, 1, 9998);
+    communicator->Receive(&time, 1, 1, 9998);
+    communicator->Receive(&numberOfExtracts, 1, 1, 9998);
+
+    myprint("receiving " << numberOfExtracts << " extracts at time " << time);
+
+    // Add new time
+    if (commIndex == 0)
       {
-      dataObjectVector.push_back(NULL);
+      this->Internal->TimeSteps.push_back(time);
       }
 
-    dataObjectVector[insertIndex] = dataObject;
-    dataObject->Delete();
+    size_t numberOfTimeSteps = this->Internal->TimeSteps.size();
+
+    // Receive extracts
+    for (int i = 0; i < numberOfExtracts; ++i)
+      {
+      communicator->Receive(&sinkTag, 1, 1, 9998);
+      vtkDataObject* dataObject = communicator->ReceiveDataObject(1, 9999);
+      if (!dataObject)
+        {
+        vtkErrorMacro("Error receiving data object from controller.");
+        continue;
+        }
+
+      vtkInternal::DataPiecesVectorType& dataPiecesVector =
+        this->Internal->DataObjectCache[sinkTag];
+
+      if (dataPiecesVector.size() < numberOfTimeSteps)
+        {
+        dataPiecesVector.resize(numberOfTimeSteps);
+        }
+
+      vtkInternal::DataPiecesType& dataPieces = dataPiecesVector[numberOfTimeSteps-1];
+
+      dataPieces.resize(numberOfSocketCommunicators);
+      dataPieces[commIndex] = dataObject;
+      dataObject->Delete();
+      }
     }
 
   this->Internal->NewDataAvailable = true;
-
-  // Don't call modified, we will call modified from Poll().
-  //this->Modified();
 }
 
 //----------------------------------------------------------------------------
@@ -618,9 +644,18 @@ int vtkLiveDataSource::RequestData(vtkInformation *request,
       continue;
       }
 
-    if (stepIndex >= 0 && stepIndex < static_cast<int>(itr->second.size()))
+    const vtkInternal::DataPiecesVectorType& dataPiecesVector = itr->second;
+    
+    vtkSmartPointer<vtkMultiBlockDataSet> dataPiecesOutput = vtkSmartPointer<vtkMultiBlockDataSet>::New();
+    output->SetBlock(output->GetNumberOfBlocks(), dataPiecesOutput);
+
+    if (stepIndex >= 0 && stepIndex < static_cast<int>(dataPiecesVector.size()))
       {
-      output->SetBlock(output->GetNumberOfBlocks(), itr->second[stepIndex]);
+      const vtkInternal::DataPiecesType& dataPieces = dataPiecesVector[stepIndex];
+      for (size_t pieceIndex = 0; pieceIndex < dataPieces.size(); ++pieceIndex)
+        {
+        dataPiecesOutput->SetBlock(dataPiecesOutput->GetNumberOfBlocks(), dataPieces[pieceIndex]);
+        }
       }
     }
 
