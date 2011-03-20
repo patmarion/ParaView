@@ -47,7 +47,7 @@
 #include <vtkstd/algorithm>
 #include <vtksys/ios/sstream>
 
-#if 0
+#if 1
 #define myprint(msg)
 #else
 #define myprint(msg) \
@@ -173,10 +173,10 @@ void vtkCoProcessorTransfer::CoProcessorMakeConnections(vtkIntArray* procIds)
     {
     vtkstd::string hostFromStream;
     connectionInfo >> hostFromStream;
-    printf("received host %d: %s\n", i, hostFromStream.c_str());
+    myprint("received_host " << i << " " << hostFromStream);
     if (i == indexInPartition)
       {
-      printf("using host: %s\n", hostFromStream.c_str());
+      myprint("using_host: " hostFromStream);
       host = hostFromStream;
       break;
       }
