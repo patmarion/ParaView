@@ -21,6 +21,7 @@
 #include "vtkJPEGWriter.h"
 #include "vtkMath.h"
 #include "vtkMultiProcessController.h"
+#include "vtkMultiProcessStream.h"
 #include "vtkObjectFactory.h"
 #include "vtkPNGWriter.h"
 #include "vtkPNMWriter.h"
@@ -141,6 +142,39 @@ int vtkSMUtilities::SaveImageOnProcessZero(vtkImageData* image,
     }
 
   return error_code;
+}
+
+//----------------------------------------------------------------------------
+vtkStdString vtkSMUtilities::ReadFileOnProcessZero(const char* fileName)
+{
+  vtkMultiProcessController *controller = vtkMultiProcessController::GetGlobalController();
+  vtkMultiProcessStream broadcastStream;
+
+  if (!controller || (controller && (controller->GetLocalProcessId() == 0)))
+    {
+    std::string lines;
+    std::string line;
+    std::ifstream myfile(fileName);
+    if (myfile.is_open())
+      {
+      while (myfile.good())
+        {
+        std::getline(myfile, line);
+        lines += line + "\n";
+        }
+      myfile.close();
+      }
+    broadcastStream << lines;
+    }
+
+  if (controller)
+    {
+    controller->Broadcast(broadcastStream, 0);
+    }
+
+  vtkStdString fileContents;
+  broadcastStream >> fileContents;
+  return fileContents;
 }
 
 //----------------------------------------------------------------------------

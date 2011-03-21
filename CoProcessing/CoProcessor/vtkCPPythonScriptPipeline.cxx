@@ -63,25 +63,13 @@ vtkCPPythonScriptPipeline::~vtkCPPythonScriptPipeline()
 //----------------------------------------------------------------------------
 int vtkCPPythonScriptPipeline::Initialize(const char* fileName)
 {
-  if(vtksys::SystemTools::FileExists(fileName) == 0)
-    {
-    vtkErrorMacro("Could not find file " << fileName);
-    return 0;
-    }
-
-  // for now do not check on filename extension:
-  //vtksys::SystemTools::GetFilenameLastExtension(FileName) == ".py" == 0)
-
-  vtkstd::string fileNamePath = vtksys::SystemTools::GetFilenamePath(fileName);
-  vtkstd::string fileNameName = vtksys::SystemTools::GetFilenameWithoutExtension(
-    vtksys::SystemTools::GetFilenameName(fileName));
-  // need to save the script name as it is used as the name of the module
-  this->SetPythonScriptName(fileNameName.c_str());
+  this->SetPythonScriptName("_cpscriptmodule");
 
   ostringstream loadPythonModules;
   loadPythonModules
-    << "sys.path.append('" << fileNamePath << "')\n"
-    << "import " << fileNameName << "\n";
+    << "paraview.servermanager._ImportModuleFromProcessZero('"
+    << this->PythonScriptName << "', '" << fileName << "')\n"
+    << "import " << this->PythonScriptName << "\n";
 
   this->PythonHelper->GetPythonInterpretor()->RunSimpleString(
     loadPythonModules.str().c_str());

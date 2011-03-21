@@ -20,6 +20,7 @@
 #define __vtkSMUtilities_h
 
 #include "vtkSMObject.h"
+#include "vtkStdString.h"
 
 class vtkImageData;
 class vtkPoints;
@@ -52,6 +53,12 @@ public:
   // Other processes will recieve the return code through a broadcast.
   static int SaveImageOnProcessZero(vtkImageData* image,
                 const char* filename, const char* writerName);
+
+
+  // Description:
+  // Reads the given file on process 0, broadcasts the contents to all processes
+  // and returns the contents.
+  static vtkStdString ReadFileOnProcessZero(const char* fileName);
 
   // Description:
   // Returns the points an orbit to revolve around the \c center at a distance

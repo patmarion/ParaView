@@ -2085,6 +2085,15 @@ class _ModuleLoader(object):
         exec code in module.__dict__
         return module
 
+def _ImportModuleFromProcessZero(moduleName, fileName):
+    fileContents = vtkSMUtilities.ReadFileOnProcessZero(fileName)
+    if fileContents:
+        import imp
+        newModule = sys.modules.setdefault(moduleName, imp.new_module(moduleName))
+        moduleCode = compile(fileContents, '<string>', 'exec')
+        exec moduleCode in newModule.__dict__
+
+
 def LoadXML(xmlstring):
     """Given a server manager XML as a string, parse and process it."""
     parser = vtkSMXMLParser()
