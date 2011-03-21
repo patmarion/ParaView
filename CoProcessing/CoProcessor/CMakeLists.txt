@@ -27,6 +27,7 @@ CONFIGURE_FILE("${CoProcessing_SOURCE_DIR}/CoProcessor/CPSystemInformation.h.in"
                @ONLY IMMEDIATE)
 include_directories(
   ${CoProcessing_BINARY_DIR}/CoProcessor
+  ${ParaView_SOURCE_DIR}/Frozen/output
 )
 
 set(CoProcessor_SRCS
@@ -54,6 +55,7 @@ target_link_libraries(
   vtkPVFilters
   vtkPVServerManager
   vtkPVPython
+  ${ParaView_SOURCE_DIR}/Frozen/output/build/libvtkPyFrozen.a
 )
 
 # Create Python bindings for the co-processing library

@@ -26,6 +26,9 @@
 #include "vtkSMObject.h"
 #include "vtkSMXMLParser.h"
 
+
+#include "frozen_header.h"
+
 #include <vtkstd/string>
 using vtkstd::string;
 #include <vtksys/SystemTools.hxx>
@@ -98,6 +101,9 @@ vtkCPPythonHelper* vtkCPPythonHelper::New()
 #else
     strcpy(argv[0], CWD.c_str());
 #endif
+
+    _assign_frozen_modules();
+
     vtkPVMain::Initialize(&argc, &argv);
     vtkCPPythonHelper::Instance->PVMain = vtkPVMain::New();
     vtkCPPythonHelper::Instance->PythonOptions = vtkPVPythonOptions::New();
