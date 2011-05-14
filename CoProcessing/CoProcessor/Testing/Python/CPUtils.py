@@ -302,6 +302,23 @@ def send_extracts(extracts, timestep, time):
         get_transfer().SendExtracts(extract_collection, extract_tags, timestep, time)
 
 
+def reduce_all_to_one(data_object, controller, receive_process=0):
+
+    if not data_object:
+        raise Exception("null data object")
+    if not controller:
+        raise Exception("null controller")
+
+    import libvtkCoProcessorPython as vtkcp
+
+    aggregated_data = data_object.NewInstance()
+    aggregated_data.UnRegister(None)
+    vtkcp.vtkCPPartitionHelper.AggregateDataObject(data_object, aggregated_data,
+                                                    controller, receive_process)
+
+    return aggregated_data
+
+
 def reduce_all_to_n(data_object, controller, number_of_processes=1):
 
     if not data_object:
@@ -330,7 +347,7 @@ def reduce_all_to_n(data_object, controller, number_of_processes=1):
 
     #myprint("  %d cells" % output.GetNumberOfCells())
     if output.GetNumberOfCells() == 0:
-        return None
+        return vtk.vtkPolyData()
     else:
         data_copy = vtk.vtkPolyData()
         data_copy.ShallowCopy(reduce_filter.GetOutput())
@@ -383,8 +400,8 @@ def reduce_data_one_shot(data_object, number_of_processes):
 
 def reduce_data(data_object):
 
-    if data_object.GetClassName() != "vtkPolyData":
-        raise Exception("Cannot reduce data type: " + data_object.GetClassName())
+    #if data_object.GetClassName() != "vtkPolyData":
+    #    raise Exception("Cannot reduce data type: " + data_object.GetClassName())
 
     if _subcontrollers is None:
         raise Exception("Subcontrollers have not been initialized.")
@@ -394,18 +411,15 @@ def reduce_data(data_object):
             #myprint("skip")
             continue
 
-        if not data_object:
-            raise Exception("Cannot reduce data object, data object is null.")
 
         #nCells = data_object.GetNumberOfCells()
         #nCellsReduced = 0
-        data_object = reduce_all_to_n(data_object, subcontroller)
+        #data_object = reduce_all_to_n(data_object, subcontroller)
+        data_object = reduce_all_to_one(data_object, subcontroller)
 
         #if data_object: nCellsReduced = data_object.GetNumberOfCells()
         #myprint("reduce %d --> %d" % (nCells, nCellsReduced))
 
-    if not data_object:
-        data_object = vtk.vtkPolyData()
     return data_object
 
 

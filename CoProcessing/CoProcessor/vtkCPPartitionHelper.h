@@ -18,6 +18,7 @@
 #include "vtkObject.h"
 #include "CPWin32Header.h" // For windows import/export of shared libraries
 
+class vtkDataObject;
 class vtkIntArray;
 class vtkStringArray;
 class vtkMultiProcessController;
@@ -35,6 +36,8 @@ public:
   /// Description:
   static void ComputePSetRanks(vtkIntArray* ranks);
 
+  static bool AggregateDataObject(vtkDataObject* in, vtkDataObject* out,
+                                  vtkMultiProcessController* controller, int receiveProcessId);
 
   static void SendMessages(vtkStringArray* sendArray, vtkStringArray* receiveArray,
                               vtkMultiProcessController* controller, int receivePid);
