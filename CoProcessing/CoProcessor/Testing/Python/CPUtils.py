@@ -481,7 +481,9 @@ def _compute_psets(ranks):
         psets[pset_id].append((rank_in_pset, global_rank))
 
     pset_list = list()
-    for pset_id in xrange(len(psets)):
+    pset_ids = psets.keys()
+    pset_ids.sort()
+    for pset_id in pset_ids:
       pset_ranks = psets[pset_id]
       pset_ranks = sorted(pset_ranks, key=lambda rank_pair: rank_pair[0])
       pset_list.append([rank_pair[1] for rank_pair in pset_ranks])
