@@ -37,6 +37,7 @@
 #include "vtkStringArray.h"
 #include "vtkPVXMLElement.h"
 #include "vtkPVOptions.h"
+#include "vtkTimerLog.h"
 
 #include <vtkstd/vector>
 #include <vtkstd/map>
@@ -363,6 +364,8 @@ void vtkLiveDataSource::ReceiveExtract()
 {
   myprint("receive_extract");
 
+  vtkTimerLog::MarkStartEvent("vtkLiveDataSource::ReceiveExtract");
+
   // chop storage vectors if we are at the cache limit
   if (this->CacheSize && this->Internal->TimeSteps.size() >= this->CacheSize)
     {
@@ -434,6 +437,8 @@ void vtkLiveDataSource::ReceiveExtract()
     {
     this->Internal->NotifySocket->Send("N", 1);
     }
+
+  vtkTimerLog::MarkEndEvent("vtkLiveDataSource::ReceiveExtract");
 }
 
 //----------------------------------------------------------------------------

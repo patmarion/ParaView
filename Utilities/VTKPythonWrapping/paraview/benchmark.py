@@ -111,6 +111,21 @@ def maximize_logs () :
     pm.SetLogThreshold(acid, 0x10, 0.0)
 
 
+def clear_logs():
+
+    global logs
+    logs = []
+
+    pm = paraview.servermanager.vtkProcessModule.GetProcessModule()
+    if pm == None:
+        return
+
+    acid = servermanager.ActiveConnection.ID #:) acronym
+    pm.ResetLog()
+    for server in [0x1, 0x4, 0x10]:
+        pm.ResetLog(acid, 0x1)
+
+
 def import_logs( filename ) :
     """
     This is for bringing in a saved log files and parse it after the fact.
@@ -184,6 +199,8 @@ def get_logs() :
             for line in timerInfo.GetLog(i).split('\n'):
                 alog.lines.append(line)
             logs.append(alog)
+
+    return logs
 
 def print_logs() :
     global logs

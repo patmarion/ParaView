@@ -4,6 +4,7 @@ set(python_files
   cp-pvclient.py
   CPUtils.py
   data-writer.py
+  livedatasetup.py
   PartitionUtils.py
   phasta_live.py
   phasta_rendering.py
