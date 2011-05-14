@@ -19,6 +19,9 @@
 #include "CPWin32Header.h" // For windows import/export of shared libraries
 
 class vtkIntArray;
+class vtkStringArray;
+class vtkMultiProcessController;
+
 
 /// @ingroup CoProcessing
 /// This class provides utility methods for computing process partitions
@@ -31,6 +34,10 @@ public:
 
   /// Description:
   static void ComputePSetRanks(vtkIntArray* ranks);
+
+
+  static void SendMessages(vtkStringArray* sendArray, vtkStringArray* receiveArray,
+                              vtkMultiProcessController* controller, int receivePid);
 
 
 //BTX

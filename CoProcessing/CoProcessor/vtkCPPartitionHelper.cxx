@@ -16,9 +16,12 @@
 
 #include "vtkObjectFactory.h"
 #include "vtkIntArray.h"
+#include "vtkStringArray.h"
 #include "vtkSortDataArray.h"
 #include "vtkProcessModule.h"
 #include "vtkMultiProcessController.h"
+#include "vtkMultiProcessStream.h"
+
 
 #ifdef __bgp__
 #include <spi/kernel_interface.h>
@@ -26,6 +29,14 @@
 #include <common/bgp_personality_inlines.h>
 #endif
 
+#if 1
+#define myprint(msg)
+#else
+#define myprint(msg) \
+    std::cout << "proc(" \
+              << vtkProcessModule::GetProcessModule()->GetPartitionId() \
+              << ") " << msg << endl;
+#endif
 
 //----------------------------------------------------------------------------
 class vtkCPPartitionHelper::vtkInternals
@@ -85,6 +96,66 @@ void vtkCPPartitionHelper::ComputePSetRanks(vtkIntArray* ranks)
   vtkGenericWarningMacro("vtkCPPartitionHelper::ComputePSetRanks(vtkIntArray*) not implemented.");
 #endif
 
+}
+
+
+//----------------------------------------------------------------------------
+void vtkCPPartitionHelper::SendMessages(vtkStringArray* sendArray, vtkStringArray* receiveArray,
+            vtkMultiProcessController* controller, int receivePid)
+{
+
+    const int commTag = 34567;
+    const int localPid = controller->GetLocalProcessId();
+
+    if (localPid == receivePid)
+      {
+
+      for (int i = 0; i < sendArray->GetNumberOfTuples(); ++i)
+        {
+        receiveArray->InsertNextValue(sendArray->GetValue(i));
+        }
+
+      const int numberOfProcs = controller->GetNumberOfProcesses();
+      for (int i = 0; i < numberOfProcs; ++i)
+        {
+
+        if (i == receivePid)
+          {
+          continue;
+          }
+
+        myprint("receiving from " << i);
+
+        vtkMultiProcessStream receiveStream;
+        controller->Receive(receiveStream, i, commTag);
+
+        int numberOfValues = 0;
+        receiveStream >> numberOfValues;
+
+        for (int i = 0; i < numberOfValues;  ++i)
+          {
+          vtkstd::string tmp;
+          receiveStream >> tmp;
+          myprint("  received str: " << tmp);
+          receiveArray->InsertNextValue(tmp);
+          }
+        }
+
+      }
+    else
+      {
+
+      vtkMultiProcessStream sendStream;
+      int numberOfTuples = sendArray->GetNumberOfTuples();
+      sendStream << numberOfTuples;
+      for (int i = 0; i < sendArray->GetNumberOfTuples(); ++i)
+        {
+        sendStream << vtkstd::string(sendArray->GetValue(i));
+        }
+
+      myprint("sending stream to proc 0");
+      controller->Send(sendStream, receivePid, commTag);
+      }
 }
 
 //----------------------------------------------------------------------------

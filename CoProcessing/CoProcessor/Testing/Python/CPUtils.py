@@ -35,6 +35,46 @@ def print_messages():
         print m
     _messages = []
 
+_logfile = None
+def write_message(msg):
+    global _logfile
+    if not _logfile:
+        _logfile = open("cplog_%06d.txt" % get_pid(), "w")
+    _logfile.write(msg + "\n")
+
+def flush_logfile():
+    global _logfile
+    if _logfile:
+        _logfile.flush()
+
+def gather_print_messages():
+
+    import libvtkCoProcessorPython as vtkcp
+
+    controllers = get_subcontrollers()
+    if not controllers:
+        return
+
+    controller = controllers[0]
+    if not controller:
+        raise Exception("Gather print failed because first subcontroller is None")
+
+    sendArray = vtk.vtkStringArray()
+    receiveArray = vtk.vtkStringArray()
+
+    global _messages
+    for m in _messages:
+        sendArray.InsertNextValue(m)
+    _messages = []
+
+    # Gather messages to process 0 local to the controller and print
+    vtkcp.vtkCPPartitionHelper.SendMessages(sendArray, receiveArray, controller, 0)
+    if controller.GetLocalProcessId() == 0:
+        for i in xrange(receiveArray.GetNumberOfTuples()):
+            write_message(receiveArray.GetValue(i))
+    flush_logfile()
+
+
 def _push_message(m):
     if _log_messages:  _messages.append(m)
     else: print m
