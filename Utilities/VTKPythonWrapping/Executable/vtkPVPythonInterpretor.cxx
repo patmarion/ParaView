@@ -212,6 +212,9 @@ struct vtkPythonMessage
 class vtkPVPythonInterpretorInternal
 {
 public:
+
+  PyGILState_STATE GState;
+
   PyThreadState* Interpretor;
   PyThreadState* PreviousInterpretor; // save when MakeCurrent is called.
 
@@ -227,10 +230,12 @@ public:
     {
     if (this->Interpretor)
       {
+      this->GState = PyGILState_Ensure();
       this->MakeCurrent();
       Py_EndInterpreter(this->Interpretor);
       this->ReleaseControl();
       this->Interpretor = 0;
+      PyGILState_Release(this->GState);
       }
     }
 
@@ -430,6 +435,8 @@ int vtkPVPythonInterpretor::InitializeSubInterpretor(int vtkNotUsed(argc),
 #endif
     }
 
+  this->Internal->GState = PyGILState_Ensure();
+
   PyThreadState* cur = 0;
   if (this->UseNewInterp)
     {
@@ -447,6 +454,9 @@ int vtkPVPythonInterpretor::InitializeSubInterpretor(int vtkNotUsed(argc),
     this->Internal->ReleaseControl();
     PyThreadState_Swap(cur);
     }
+
+  PyGILState_Release(this->Internal->GState);
+
   return 1;
 }
 
@@ -489,6 +499,7 @@ int vtkPVPythonInterpretor::PyMain(int argc, char** argv)
 //-----------------------------------------------------------------------------
 void vtkPVPythonInterpretor::MakeCurrent()
 {
+  this->Internal->GState = PyGILState_Ensure();
   if (this->UseNewInterp)
     {
     this->Internal->MakeCurrent();
@@ -502,6 +513,7 @@ void vtkPVPythonInterpretor::ReleaseControl()
     {
     this->Internal->ReleaseControl();
     }
+  PyGILState_Release(this->Internal->GState);
 }
 
 //-----------------------------------------------------------------------------
