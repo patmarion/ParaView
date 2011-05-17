@@ -413,7 +413,6 @@ void pqPythonShell::printStdout(const QString& text)
   
   this->Implementation->Console.printString(text);
   
-  QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
 
 void pqPythonShell::printMessage(const QString& text)
@@ -433,7 +432,6 @@ void pqPythonShell::printStderr(const QString& text)
   
   this->Implementation->Console.printString(text);
   
-  QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
 
 void pqPythonShell::onExecuteCommand(const QString& Command)
