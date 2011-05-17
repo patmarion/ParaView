@@ -89,6 +89,9 @@ public:
   vtkSetMacro(CaptureStreams, bool);
   vtkGetMacro(CaptureStreams, bool);
 
+  vtkSetMacro(UseNewInterp, bool);
+  vtkGetMacro(UseNewInterp, bool);
+
   // Description:
   // Flush any errors received from the python interpretor to the
   // vtkOutputWindow. Applicable only if CaptureStreams was true when the
@@ -121,6 +124,7 @@ protected:
   vtkSetStringMacro(ExecutablePath);
 
   bool CaptureStreams;
+  bool UseNewInterp;
 
   friend struct vtkPVPythonInterpretorWrapper;
 

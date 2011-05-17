@@ -265,6 +265,7 @@ vtkPVPythonInterpretor::vtkPVPythonInterpretor()
   this->Internal = new vtkPVPythonInterpretorInternal();
   this->ExecutablePath = 0;
   this->CaptureStreams = false;
+  this->UseNewInterp = true;
 }
 
 //-----------------------------------------------------------------------------
@@ -429,14 +430,23 @@ int vtkPVPythonInterpretor::InitializeSubInterpretor(int vtkNotUsed(argc),
 #endif
     }
 
-  // Py_NewInterpreter() should not be called when a sub-interpretor is active.
-  // So ensure that the sub-interpretor is not active by doing the following.
-  PyThreadState* cur = PyThreadState_Swap(0);
-  this->Internal->Interpretor = Py_NewInterpreter();
-  this->Internal->MakeCurrent();
+  PyThreadState* cur = 0;
+  if (this->UseNewInterp)
+    {
+    // Py_NewInterpreter() should not be called when a sub-interpretor is active.
+    // So ensure that the sub-interpretor is not active by doing the following.
+    cur = PyThreadState_Swap(0);
+    this->Internal->Interpretor = Py_NewInterpreter();
+    this->Internal->MakeCurrent();
+    }
+
   this->InitializeInternal();
-  this->Internal->ReleaseControl();
-  PyThreadState_Swap(cur);
+
+  if (this->UseNewInterp)
+    {
+    this->Internal->ReleaseControl();
+    PyThreadState_Swap(cur);
+    }
   return 1;
 }
 
@@ -479,13 +489,19 @@ int vtkPVPythonInterpretor::PyMain(int argc, char** argv)
 //-----------------------------------------------------------------------------
 void vtkPVPythonInterpretor::MakeCurrent()
 {
-  this->Internal->MakeCurrent();
+  if (this->UseNewInterp)
+    {
+    this->Internal->MakeCurrent();
+    }
 }
 
 //-----------------------------------------------------------------------------
 void vtkPVPythonInterpretor::ReleaseControl()
 {
-  this->Internal->ReleaseControl();
+  if (this->UseNewInterp)
+    {
+    this->Internal->ReleaseControl();
+    }
 }
 
 //-----------------------------------------------------------------------------
