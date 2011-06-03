@@ -57,6 +57,12 @@ protected:
   virtual vtkPVXMLElement* LocateProxyElement(int id);
 
   // Description:
+  // Called by NewProxy().  If ShouldSkipProxy() returns true then NewProxy
+  // will abort and return NULL.  Subclasses can override this method to
+  // control which proxys are deserialized.
+  virtual bool ShouldSkipProxy(const char* xmlgroup, const char* xmlname) { return false; }
+
+  // Description:
   // TEMPORARY. Used to load the state on the proxy. This is only for the sake
   // of the lookmark state loader until we get the chance to clean it up.
   // DONT override this method.

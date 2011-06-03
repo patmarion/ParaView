@@ -408,6 +408,9 @@ int vtkMPIMoveData::RequestData(vtkInformation*,
       }
     }
 
+
+  printf("vtkMPIMoveData::RequestData\n");
+
   this->UpdatePiece = outInfo->Get(
     vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER());
   this->UpdateNumberOfPieces = outInfo->Get(
@@ -945,6 +948,8 @@ void vtkMPIMoveData::DataServerSendToClient(vtkDataObject* output)
         }
       }
 
+    printf("send data to client...\n");
+
     this->ClearBuffer();
     this->MarshalDataToBuffer(tosend);
     this->ClientDataServerSocketController->Send(
@@ -968,6 +973,8 @@ void vtkMPIMoveData::ClientReceiveFromDataServer(vtkDataObject* output)
     vtkErrorMacro("Missing socket controler on cleint.");
     return;
     }
+
+  printf("receiving data from server...\n");
 
   this->ClearBuffer();
   com->Receive(&(this->NumberOfBuffers), 1, 1, 23490);

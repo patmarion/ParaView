@@ -24,6 +24,7 @@ SET (MOC_HEADERS
   pqAboutDialogReaction.h
   pqAlwaysConnectedBehavior.h
   pqAnimationTimeToolbar.h
+  pqApplicationComponentPanels.h
   pqApplicationSettingsReaction.h
   pqAutoApplyReaction.h
   pqAutoLoadPluginXMLBehavior.h
@@ -52,6 +53,7 @@ SET (MOC_HEADERS
   pqFixPathsInStateFilesBehavior.h
   pqHelpReaction.h
   pqIgnoreSourceTimeReaction.h
+  pqLiveSourcePanel.h
   pqLoadDataReaction.h
   pqLoadStateReaction.h
   pqMainControlsToolbar.h
@@ -184,6 +186,8 @@ SET (SOURCE_FILES
   pqHelpReaction.h
   pqIgnoreSourceTimeReaction.cxx
   pqIgnoreSourceTimeReaction.h
+  pqLiveSourcePanel.cxx
+  pqLiveSourcePanel.h
   pqLoadDataReaction.cxx
   pqLoadDataReaction.h
   pqLoadStateReaction.cxx

@@ -34,6 +34,9 @@ set(CoProcessor_SRCS
   vtkCPInputDataDescription.cxx
   vtkCPPipeline.cxx
   vtkCPProcessor.cxx
+
+  vtkCoProcessorTransfer.cxx
+  vtkCPPartitionHelper.cxx
 )
 IF (PARAVIEW_ENABLE_PYTHON)
   set(CoProcessor_SRCS

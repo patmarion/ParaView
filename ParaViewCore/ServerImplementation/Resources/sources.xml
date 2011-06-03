@@ -1891,6 +1891,96 @@ OS is the output scalar; M represents the maximum value; G represents the Gaussi
    </SourceProxy>
 
    <!-- ==================================================================== -->
+   <SourceProxy name="LiveDataSource" class="vtkLiveDataSource"
+                label="Live Data Source">
+      <Documentation
+        long_help="Produces data recieved from a live data connection"
+        short_help="Produces data recieved from a live data connection">
+        Produces data recieved from a live data connection
+      </Documentation>
+
+      <Property
+        name="Listen"
+        command="ListenForCoProcessorConnection" />
+
+      <Property
+        name="Poll"
+        command="PollForNewDataObjects" />
+
+      <IntVectorProperty
+        name="ListenPort"
+        command="SetPort"
+        number_of_elements="1"
+        default_values="22222">
+        <Documentation>
+        The port used to listen for live data connections.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+        name="CacheSize"
+        command="SetCacheSize"
+        number_of_elements="1"
+        default_values="0">
+        <Documentation>
+        The cache size determines how many timesteps of data will be saved
+        by this source.  A cache size of zero indicates an unlimited size.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+        name="SocketsPerProcess"
+        command="SetSocketsPerProcess"
+        number_of_elements="1"
+        default_values="1">
+        <Documentation>
+        The number of sockets each pvserver process will open for receiving data.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+          name="SinkStatus"
+          command="SetSinkStatus"
+          repeat_command="1"
+          number_of_elements_per_command="2">
+          <Documentation>
+          Set the on/off status of the extracts.  This property is set by int pairs
+          of (sink_tag, status).
+          </Documentation>
+      </IntVectorProperty>
+
+      <DoubleVectorProperty
+          name="TimestepValues"
+          repeatable="1"
+          information_only="1">
+        <TimeStepsInformationHelper/>
+      </DoubleVectorProperty>
+
+      <StringVectorProperty
+          name="CPState"
+          command="GetCPState"
+          information_only="1">
+        <SimpleStringInformationHelper/>
+        <Documentation>
+          The most recent xml proxy state that was received from the coprocessor.
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+          name="CPStateSend"
+          command="SetCPStateSend"
+          number_of_elements="1"
+          is_internal="1"
+          default_values="">
+        <Documentation>
+          The most recent xml proxy state that should be pushed.
+        </Documentation>
+      </StringVectorProperty>
+
+     <!-- End of LiveDataSource -->
+   </SourceProxy>
+
+   <!-- ==================================================================== -->
    <SourceProxy name="DataObjectGenerator" 
                  class="vtkDataObjectGenerator"
                  label="Data Object Generator">

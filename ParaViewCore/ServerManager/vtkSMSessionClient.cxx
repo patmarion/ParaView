@@ -641,6 +641,7 @@ bool vtkSMSessionClient::GatherInformation(
 
   if (controller)
     {
+    printf("Trigger a server side gather information\n");
     controller->TriggerRMIOnAllChildren(
       &raw_message[0], static_cast<int>(raw_message.size()),
       vtkPVSessionServer::CLIENT_SERVER_MESSAGE_RMI);
