@@ -449,17 +449,18 @@ void pqPythonShell::printStderr(const QString& text)
 void pqPythonShell::onExecuteCommand(const QString& Command)
 {
   QString command = Command;
-  command.replace(QRegExp("\\s*$"), "");
-  this->internalExecuteCommand(command);
+  command.replace("\r\n", "\n");
+  command.replace("\r", "\n");
+  QStringList lines = command.split("\n");
 
-  // Find the indent for the command.
-  QRegExp regExp("^(\\s+)");
-  QString indent;
-  if (regExp.indexIn(command) != -1)
+  emit this->executing(true);
+  foreach (QString line, lines)
     {
-    indent = regExp.cap(1);
+    this->Implementation->executeCommand(line);
     }
-  this->Implementation->promptForInput(indent);
+  emit this->executing(false);
+
+  this->promptForInput();
 }
 
 void pqPythonShell::promptForInput()
