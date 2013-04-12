@@ -306,12 +306,12 @@ void pqPythonShell::executeInitFromGUI()
 
 void pqPythonShell::executeScript(const QString& script)
 {
-  this->printStdout("\n");
-  emit this->executing(true);  
+  //this->printStdout("\n");
+  emit this->executing(true);
   this->Implementation->Interpreter->RunSimpleString(
     script.toAscii().data());
   emit this->executing(false);
-  this->Implementation->promptForInput();
+  //this->Implementation->promptForInput();
 }
 
 QStringList pqPythonShell::getPythonAttributes(const QString& pythonObjectName)
@@ -380,6 +380,8 @@ void pqPythonShell::printStdout(vtkObject*, unsigned long, void*, void* calldata
   const char* text = reinterpret_cast<const char*>(calldata);
   this->printStdout(text);
   this->Implementation->Interpreter->ClearMessages();
+
+  std::cout << qPrintable(text) << std::flush;
 }
 
 #include <QDialog>
@@ -413,6 +415,8 @@ void pqPythonShell::printStderr(vtkObject*, unsigned long, void*, void* calldata
   const char* text = reinterpret_cast<const char*>(calldata);
   this->printStderr(text);
   this->Implementation->Interpreter->ClearMessages();
+
+  std::cout << qPrintable(text) << std::flush;
 }
 
 void pqPythonShell::printStdout(const QString& text)
@@ -466,13 +470,6 @@ void pqPythonShell::onExecuteCommand(const QString& Command)
 void pqPythonShell::promptForInput()
 {
   this->Implementation->promptForInput();
-}
-
-void pqPythonShell::internalExecuteCommand(const QString& command)
-{
-  emit this->executing(true);  
-  this->Implementation->executeCommand(command);
-  emit this->executing(false);
 }
 
 void pqPythonShell::clearUndoStack()

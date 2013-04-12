@@ -99,8 +99,6 @@ private:
   pqPythonShell(const pqPythonShell&);
   pqPythonShell& operator=(const pqPythonShell&);
 
-  void internalExecuteCommand(const QString&);
-
   struct pqImplementation;
   pqImplementation* const Implementation;
 

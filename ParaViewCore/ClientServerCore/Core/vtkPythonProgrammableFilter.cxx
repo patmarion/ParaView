@@ -69,6 +69,7 @@ vtkPVPythonInterpretor* vtkPythonProgrammableFilter::GetGlobalPipelineInterpreto
     {
     vtkPythonProgrammableFilter::GlobalPipelineInterpretor = vtkPVPythonInterpretor::New();
     vtkPythonProgrammableFilter::GlobalPipelineInterpretor->SetCaptureStreams(true);
+    vtkPythonProgrammableFilter::GlobalPipelineInterpretor->SetUseNewInterp(false);
     const char* argv0 = vtkProcessModule::GetProcessModule()->
       GetOptions()->GetArgv0();
     vtkPythonProgrammableFilter::GlobalPipelineInterpretor->InitializeSubInterpretor(

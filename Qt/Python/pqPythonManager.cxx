@@ -134,6 +134,8 @@ pqPythonManager::~pqPythonManager()
     delete this->Internal->Editor;
     }
   delete this->Internal;
+
+  Py_Finalize();
 }
 
 //-----------------------------------------------------------------------------
